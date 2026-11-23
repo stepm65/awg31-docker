@@ -22,6 +22,15 @@
 #  в консоли контейнера; пригодится, если список у вас уже есть):
 #    :global AWG31LIST "my-vpn"
 #
+#  Откуда приходит трафик клиентов. По умолчанию — интерфейсы из списка «LAN». Если клиенты за
+#  другим маршрутизатором (OSPF, VLAN, туннель) и приходят на роутер через интерфейс вне LAN,
+#  правила mangle их не увидят: счётчики awg31_mark_conn и awg31_route остаются нулевыми.
+#  Укажите список интерфейсов, через которые приходит трафик, либо «!WAN» (всё, кроме WAN; не
+#  сочетайте с AWG31ALL: попадёт и служебный трафик ваших других контейнеров):
+#    :global AWG31IIFLIST "awg31-in"
+#  Список создаётся пустым, если его нет: добавьте в него интерфейсы
+#    /interface/list/member/add list=awg31-in interface=<интерфейс к клиентам>
+#
 #  Весь интернет-трафик LAN через контейнер (тогда решают правила на странице
 #  «Маршрутизация»: geosite, geoip, домены), а не только список awg31:
 #    :global AWG31ALL true
@@ -44,7 +53,11 @@
 :global AWG31LIST
 :local list "awg31"
 :if ([:typeof $AWG31LIST] = "str") do={ :if ([:len $AWG31LIST] > 0) do={ :set list $AWG31LIST } }
+:global AWG31IIFLIST
+:local iifl "LAN"
+:if ([:typeof $AWG31IIFLIST] = "str") do={ :if ([:len $AWG31IIFLIST] > 0) do={ :set iifl $AWG31IIFLIST } }
 :put ("container IP: " . $ip . " / " . $ip6)
+:put ("client traffic is taken from interface list: " . $iifl)
 :if ($all) do={ :put "mode: ALL LAN internet traffic goes through the container" } else={ :put ("mode: only addresses from the list " . $list) }
 
 # --- 0. Список «не уводить»: частные и служебные сети ---
@@ -57,6 +70,10 @@
 # --- 1. Списки интерфейсов (стандартные LAN/WAN) ---
 :if ([:len [/interface/list/find name="WAN"]] = 0) do={ /interface/list/add name="WAN"; :put "+ list WAN created (add your WAN ports to it!)" }
 :if ([:len [/interface/list/find name="LAN"]] = 0) do={ /interface/list/add name="LAN"; :put "+ list LAN created (add your bridge/LAN to it!)" }
+:if (([:pick $iifl 0 1] != "!") && ([:len [/interface/list/find name=$iifl]] = 0)) do={
+  /interface/list/add name=$iifl
+  :put ("+ interface list " . $iifl . " created (empty): add the interfaces client traffic comes in on")
+}
 
 # --- 2. Таблица и маршруты ---
 :if ([:len [/routing/table/find name="awg31"]] = 0) do={ /routing/table/add name="awg31" fib; :put "+ routing table awg31" }
@@ -79,7 +96,7 @@
   /ip/firewall/mangle/add chain=prerouting action=accept src-address=$ip comment="awg31_accept_container"
 }
 :if ([:len [/ip/firewall/mangle/find comment="awg31_mark_conn"]] = 0) do={
-  /ip/firewall/mangle/add chain=prerouting action=mark-connection in-interface-list=LAN connection-mark=no-mark \
+  /ip/firewall/mangle/add chain=prerouting action=mark-connection in-interface-list=$iifl connection-mark=no-mark \
     connection-state=new dst-address-type=!local dst-address-list=$list new-connection-mark="awg31" passthrough=yes \
     comment="awg31_mark_conn"
 }
@@ -90,12 +107,15 @@
   /ip/firewall/mangle/set [find comment="awg31_mark_conn"] dst-address-list=$list
 }
 :if ([:len [/ip/firewall/mangle/find comment="awg31_route"]] = 0) do={
-  /ip/firewall/mangle/add chain=prerouting action=mark-routing in-interface-list=LAN connection-mark="awg31" \
+  /ip/firewall/mangle/add chain=prerouting action=mark-routing in-interface-list=$iifl connection-mark="awg31" \
     new-routing-mark="awg31" passthrough=no comment="awg31_route"
 }
 :if ([:len [/ip/firewall/mangle/find comment="awg31_accept_container"]] > 0) do={
   /ip/firewall/mangle/set [find comment="awg31_accept_container"] src-address=$ip
 }
+# повторный запуск с другим списком интерфейсов перенастраивает уже созданные правила
+/ip/firewall/mangle/set [find comment="awg31_mark_conn"] in-interface-list=$iifl
+/ip/firewall/mangle/set [find comment="awg31_route"] in-interface-list=$iifl
 
 # --- 4a. Порядок: правила awg31 стоят выше остальных mangle-правил ---
 # Если на роутере уже есть своя маркировка (другой VPN, SMTP и т.п.), её правила с accept или
@@ -194,13 +214,15 @@
     }
     :if ([:len [/ipv6/firewall/mangle/find comment="awg31_mark_conn"]] = 0) do={
       /ipv6/firewall/mangle/add chain=prerouting action=accept src-address=$ip6 comment="awg31_accept_container"
-      /ipv6/firewall/mangle/add chain=prerouting action=mark-connection in-interface-list=LAN connection-mark=no-mark \
+      /ipv6/firewall/mangle/add chain=prerouting action=mark-connection in-interface-list=$iifl connection-mark=no-mark \
         connection-state=new dst-address-type=!local dst-address-list=$list new-connection-mark="awg31" passthrough=yes \
         comment="awg31_mark_conn"
-      /ipv6/firewall/mangle/add chain=prerouting action=mark-routing in-interface-list=LAN connection-mark="awg31" \
+      /ipv6/firewall/mangle/add chain=prerouting action=mark-routing in-interface-list=$iifl connection-mark="awg31" \
         new-routing-mark="awg31" passthrough=no comment="awg31_route"
     } else={
       :if (!$all) do={ /ipv6/firewall/mangle/set [find comment="awg31_mark_conn"] dst-address-list=$list }
+      /ipv6/firewall/mangle/set [find comment="awg31_mark_conn"] in-interface-list=$iifl
+      /ipv6/firewall/mangle/set [find comment="awg31_route"] in-interface-list=$iifl
     }
     :if ([:len [/ipv6/firewall/nat/find comment="awg31_nat"]] = 0) do={
       /ipv6/firewall/nat/add chain=srcnat action=masquerade src-address=$ip6 out-interface-list=WAN comment="awg31_nat"
