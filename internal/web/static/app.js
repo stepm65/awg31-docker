@@ -92,7 +92,7 @@ const I18N = {
     peerEndpoint: "Endpoint", peerHandshake: "Рукопожатие", peerTraffic: "Трафик", peerAllowed: "AllowedIPs", peerKey: "Ключ пира",
     cfgAddresses: "Адреса", cfgEndpoints: "Endpoints", cfgObf: "Обфускация", cfgPsk: "PresharedKey", cfgPeers: "Пиров",
     on: "включена", off: "нет", present: "есть", absent: "нет", autostartInfo: "После перезапуска контейнера туннель {state}.",
-    autostartYes: "поднимется сам", autostartNo: "останется опущенным",
+    autostartYes: "включится сам", autostartNo: "останется выключенным",
     // конфиг
     cfgTitle: "Заменить конфигурацию", cfgHint: "Приватные ключи нигде не показываются, поэтому конфиг заменяется целиком: вставьте новый .conf.",
     cfgHooks: "Строки PreUp/PostUp/PreDown/PostDown запрещены: NAT и подгонку MSS контейнер настраивает сам.",
@@ -123,7 +123,7 @@ const I18N = {
     foCheckNow: "Проверить сейчас", foChecked: "Проверка выполнена.", foSaved: "Настройки резервирования сохранены.",
     foNoGateway: "Резервирование работает только в режиме шлюза: включите AWG_AUTO_ROUTE и проверьте LAN-интерфейс на странице «Обслуживание».",
     foMode: "Режим", fo_mode_off: "Вручную", fo_mode_standby: "Горячий резерв", fo_mode_switch: "Переключение",
-    foModeNote_off: "Туннели поднимаются и выбираются основным вручную.",
+    foModeNote_off: "Туннели включаются и выбираются основным вручную.",
     foModeNote_standby: "Все туннели из списка включены; при сбое трафик мгновенно уходит в следующий.",
     foModeNote_switch: "Включён только основной; при сбое он выключается и включается следующий.",
     foTrigger: "Признак сбоя", fo_trigger_hybrid: "Рукопожатие и проба", fo_trigger_handshake: "Только рукопожатие", fo_trigger_probe: "Только проба",
@@ -398,6 +398,19 @@ function t(key, params) {
   if (params) for (const [k, v] of Object.entries(params)) s = s.split("{" + k + "}").join(String(v));
   return s;
 }
+
+// Причины от сервера приходят по-русски; в английском интерфейсе известные переводим, остальное (тексты ошибок) оставляем как есть.
+const FO_REASONS_EN = [
+  [/не в списке резервирования/g, "not in the failover list"],
+  [/нет рукопожатия/g, "no handshake"],
+  [/рукопожатие (\d+) с назад/g, "handshake $1 s ago"],
+  [/ждём первое рукопожатие/g, "waiting for the first handshake"],
+  [/поднят резервом/g, "brought up as standby"],
+  [/не поднялся: /g, "failed to come up: "],
+  [/^проба /g, "probe "],
+  [/ неисправен: /g, " is unhealthy: "],
+];
+const foReason = (r) => (lang === "en" ? FO_REASONS_EN.reduce((acc, [re, to]) => acc.replace(re, to), String(r || "")) : r);
 function setLang(l) {
   lang = l;
   try { localStorage.setItem(LANG_KEY, l); } catch (_) { /* не критично */ }
@@ -522,7 +535,7 @@ window.addEventListener("hashchange", () => {
   if (S.route.page === "router") { S.rosEdit = null; loadRouter(true); }
   if (S.auth && S.auth.authenticated) { renderSide(); renderMain(); }
 });
-document.addEventListener("input", (e) => { if (e.target.closest && e.target.closest("#main form")) S.dirty = true; });
+document.addEventListener("input", (e) => { if (e.target.closest && e.target.closest("#main form") && !e.target.closest("[data-nodirty]")) S.dirty = true; });
 document.addEventListener("click", (e) => {
   for (const d of document.querySelectorAll(".row-menu[open]")) if (!d.contains(e.target)) d.open = false;
 });
@@ -1077,7 +1090,7 @@ function pageFailover() {
     return h("tr", {},
       h("td", { class: "mono" }, i >= 0 ? String(i + 1) : "—"),
       h("td", {}, h("a", { class: "name", href: "#/p/" + encodeURIComponent(name) }, icon("server", 18), name), p.primary && h("div", { class: "sub" }, primaryBadge(p))),
-      h("td", {}, foStatePill(hh), hh.reason && h("div", { class: "sub" }, hh.reason), hh.cooldown_left > 0 && h("div", { class: "sub" }, t("foCooldownLeft", { n: hh.cooldown_left }))),
+      h("td", {}, foStatePill(hh), hh.reason && h("div", { class: "sub" }, foReason(hh.reason)), hh.cooldown_left > 0 && h("div", { class: "sub" }, t("foCooldownLeft", { n: hh.cooldown_left }))),
       h("td", { class: "mono" }, hh.handshake_age >= 0 ? fmtAgo(Math.floor(Date.now() / 1000) - hh.handshake_age) : "—",
         hh.probe_ok != null && h("div", { class: "sub" }, hh.probe_ok ? t("foProbeOk", { ms: hh.probe_ms }) : t("foProbeFail"))),
       h("td", {}, h("div", { class: "actions" },
@@ -1096,7 +1109,7 @@ function pageFailover() {
     h("div", { class: "grid-stats" },
       statCard(t("foMode"), t("fo_mode_" + fo.settings.mode), t("foModeNote_" + fo.settings.mode)),
       statCard(t("primary"), fo.primary || "—", t("primaryHint")),
-      statCard(t("foSwitches"), String(fo.switches || 0), fo.last_switch_reason || t("foNoSwitches")),
+      statCard(t("foSwitches"), String(fo.switches || 0), foReason(fo.last_switch_reason) || t("foNoSwitches")),
       statCard(t("foLastCheck"), fo.last_check && new Date(fo.last_check).getFullYear() > 2000 ? fmtAgo(Math.floor(new Date(fo.last_check).getTime() / 1000)) : "—", t("foEvery", { n: fo.settings.interval_sec }))),
     h("div", { class: "card" }, h("h2", {}, t("foPriority")), h("p", { class: "heading-sub" }, t("foPrioritySub")),
       !all.length ? emptyState() : h("div", { class: "table-scroll" }, h("table", {},
@@ -1164,7 +1177,7 @@ function pageGroups() {
   const memberState = (ms, hh) => {
     if (!ms) return h("span", { class: "pill pill-idle" }, t("grpNotSaved"));
     if (!ms.up) return h("span", { class: "pill pill-idle" }, t("foState_down"));
-    return hh ? h("span", {}, foStatePill(hh), hh.reason && h("div", { class: "sub" }, hh.reason)) : h("span", { class: "pill pill-idle" }, t("foState_starting"));
+    return hh ? h("span", {}, foStatePill(hh), hh.reason && h("div", { class: "sub" }, foReason(hh.reason))) : h("span", { class: "pill pill-idle" }, t("foState_starting"));
   };
 
   const groupCard = (g, gi) => {
@@ -1711,7 +1724,7 @@ function pagePolicy() {
           t(k === "loyal" ? "rtPresetLoyal" : "rtPresetIplist")))),
         h("p", { class: "hint" }, t("rtPresetHint")))),
     h("div", { class: "card" }, h("h2", {}, t("polTestTitle")),
-      h("form", { onsubmit: (e) => { e.preventDefault(); runTest(); } },
+      h("form", { "data-nodirty": "", onsubmit: (e) => { e.preventDefault(); runTest(); } },
         h("div", { class: "field" }, h("label", { for: "pol-q" }, t("polTestLabel")), h("input", { id: "pol-q", type: "text", class: "mono", placeholder: "www.youtube.com / 77.88.8.8", spellcheck: "false" })),
         h("div", { class: "actions" }, h("button", { class: "btn btn-secondary", type: "submit" }, icon("arrow", 16), t("polTestBtn")))),
       tr && (tr.error ? h("p", { class: "info-line" }, icon("alert", 16), h("span", {}, tr.error))
