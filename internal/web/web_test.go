@@ -10,6 +10,7 @@ import (
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/netip"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -654,6 +655,9 @@ func TestRootServesUIWithoutRedirect(t *testing.T) {
 		{"/", "text/html", `<script src="/app.js">`},
 		{"/app.js", "text/javascript", "fetch"},
 		{"/app.css", "text/css", "{"},
+		{"/services.js", "text/javascript", "AWG_SERVICES"},
+		{"/services.css", "text/css", "--svc"},
+		{"/rules.js", "text/javascript", "AWG_RULES"},
 	} {
 		resp, err := client.Get(e.ts.URL + tc.path)
 		if err != nil {
@@ -719,7 +723,7 @@ func TestStaticAssetsFontsAndNoDirectoryListing(t *testing.T) {
 
 // В стилях и скриптах не должно быть того, что нарушает строгий CSP.
 func TestStaticCodeIsCSPClean(t *testing.T) {
-	for _, name := range []string{"static/app.js", "static/index.html", "static/app.css"} {
+	for _, name := range []string{"static/app.js", "static/index.html", "static/app.css", "static/services.js", "static/services.css", "static/rules.js"} {
 		raw, err := staticFS.ReadFile(name)
 		if err != nil {
 			t.Fatal(err)
@@ -739,6 +743,30 @@ func TestStaticCodeIsCSPClean(t *testing.T) {
 					t.Errorf("%s содержит %q: inline-стили запрещены CSP", name, bad)
 				}
 			}
+		}
+	}
+}
+
+// Всё, что index.html подключает по абсолютному пути, должно отдаваться: новый файл в static/
+// без маршрута в Handler даёт 404 с text/plain, и браузер молча не исполняет скрипт.
+func TestIndexAssetsAreServed(t *testing.T) {
+	e := newEnv(t)
+	idx, err := staticFS.ReadFile("static/index.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	refs := regexp.MustCompile(`(?:src|href)="(/[^"]+)"`).FindAllStringSubmatch(string(idx), -1)
+	if len(refs) < 4 {
+		t.Fatalf("в index.html нашлось только %d ссылок", len(refs))
+	}
+	for _, m := range refs {
+		resp, err := http.Get(e.ts.URL + m[1])
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("%s из index.html: код %d", m[1], resp.StatusCode)
 		}
 	}
 }

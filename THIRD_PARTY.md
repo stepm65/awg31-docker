@@ -25,3 +25,7 @@ The console serves its typefaces from the binary (`internal/web/static/fonts/`, 
 The licence texts are embedded with the fonts, so they travel inside the binary and the image and are served by the console at `/fonts/OFL-Exo2.txt` and `/fonts/OFL-JetBrainsMono.txt`.
 
 The files are the unmodified variable `woff2` subsets (latin, cyrillic) published as `@fontsource-variable/exo-2` and `@fontsource-variable/jetbrains-mono` 5.3.0, copied from the panel repository.
+
+## Service icons in the routing editor
+
+The routing-rule editor labels rules with the logos of popular services. Their SVG paths are taken from **Simple Icons** 16.38.1 (https://github.com/simple-icons/simple-icons), released under CC0 1.0, and compiled into `internal/web/static/services.js` by `scripts/gen-services.mjs`; nothing is fetched at runtime. The logos are trademarks of their owners and are used only to identify the service a rule refers to.

@@ -102,6 +102,9 @@ func (s *Server) Handler() http.Handler {
 	})
 	mux.Handle("GET /app.js", files)
 	mux.Handle("GET /app.css", files)
+	mux.Handle("GET /services.css", files)
+	mux.Handle("GET /services.js", files)
+	mux.Handle("GET /rules.js", files)
 	mux.Handle("GET /icon.svg", files)
 	// Шаблон с одним сегментом: каталог /fonts/ не листается, отдаются только файлы по имени.
 	mux.Handle("GET /fonts/{file}", cacheFor(files, "public, max-age=86400"))
@@ -133,6 +136,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("PUT /api/policy", s.requireAuth(s.handlePutPolicy))
 	mux.HandleFunc("POST /api/policy/test", s.requireAuth(s.handleTestPolicy))
 	mux.HandleFunc("POST /api/geo/update", s.requireAuth(s.handleGeoUpdate))
+	mux.HandleFunc("GET /api/geo/categories", s.requireAuth(s.handleGeoCategories))
 	mux.HandleFunc("GET /api/router", s.requireAuth(s.handleGetRouter))
 	mux.HandleFunc("PUT /api/router", s.requireAuth(s.handlePutRouter))
 	mux.HandleFunc("POST /api/router/test", s.requireAuth(s.handleTestRouter))

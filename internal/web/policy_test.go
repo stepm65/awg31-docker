@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -101,5 +102,53 @@ func TestGeoUpdate(t *testing.T) {
 	}
 	if _, m, _ = e.do("POST", "/api/policy/test", map[string]string{"query": "music.youtube.com"}, nil); m["matched_by"] != "geosite:youtube" {
 		t.Fatalf("geosite после обновления: %v", m)
+	}
+}
+
+func TestGeoCategoriesSearch(t *testing.T) {
+	e := policyEnv(t, true)
+	if code, _, _ := e.do("GET", "/api/geo/categories?kind=geosite&q=you", nil, nil); code != http.StatusUnauthorized {
+		t.Fatalf("без входа: %d", code)
+	}
+	e.setup()
+	dir := e.srv.cfg.Geo.Dir
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	// geosite.dat в двоичном виде: три категории
+	pb := func(num int, v []byte) []byte {
+		n := len(v)
+		l := []byte{byte(num<<3 | 2)}
+		for n >= 0x80 {
+			l = append(l, byte(n)|0x80)
+			n >>= 7
+		}
+		return append(append(l, byte(n)), v...)
+	}
+	var data []byte
+	for _, c := range []string{"YOUTUBE", "my-youtube-mirror", "telegram"} {
+		data = append(data, pb(1, pb(1, []byte(c)))...)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "geosite.dat"), data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	items := func(q string) []any {
+		code, m, raw := e.do("GET", "/api/geo/categories?kind=geosite&q="+q, nil, nil)
+		if code != 200 {
+			t.Fatalf("%s: %d %s", q, code, raw)
+		}
+		return m["items"].([]any)
+	}
+	if got := items("you"); len(got) != 2 || got[0] != "youtube" || got[1] != "my-youtube-mirror" {
+		t.Fatalf("сначала совпадения с начала имени, потом из середины: %v", got)
+	}
+	if got := items("y"); len(got) != 0 {
+		t.Fatalf("короче двух символов не ищем: %v", got)
+	}
+	if got := items("nothing"); len(got) != 0 {
+		t.Fatalf("нет совпадений: %v", got)
+	}
+	if code, _, _ := e.do("GET", "/api/geo/categories?kind=bogus&q=you", nil, nil); code != http.StatusBadRequest {
+		t.Fatalf("неизвестный вид: %d", code)
 	}
 }

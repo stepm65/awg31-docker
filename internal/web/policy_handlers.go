@@ -3,6 +3,7 @@ package web
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -141,4 +142,40 @@ func (s *Server) handleGeoUpdate(w http.ResponseWriter, r *http.Request, _ strin
 	}
 	s.cfg.Logf("geo databases updated")
 	writeJSON(w, http.StatusOK, v)
+}
+
+// handleGeoCategories ищет категории в загруженных базах: нужен редактору правил, чтобы
+// подсказать имена geosite/geoip вместо угадывания. Сначала совпадения с начала имени.
+func (s *Server) handleGeoCategories(w http.ResponseWriter, r *http.Request, _ string) {
+	if s.cfg.Geo == nil {
+		writeJSON(w, http.StatusOK, map[string]any{"items": []string{}})
+		return
+	}
+	kind := r.URL.Query().Get("kind")
+	if kind != "geosite" && kind != "geoip" {
+		writeErr(w, http.StatusBadRequest, "kind: geosite или geoip")
+		return
+	}
+	q := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
+	limit := 30
+	if v, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && v > 0 && v < limit {
+		limit = v
+	}
+	items := []string{}
+	if len(q) >= 2 && len(q) <= 64 {
+		var prefix, inner []string
+		for _, c := range s.cfg.Geo.Categories(kind) {
+			switch {
+			case strings.HasPrefix(c, q):
+				prefix = append(prefix, c)
+			case strings.Contains(c, q):
+				inner = append(inner, c)
+			}
+		}
+		items = append(append(items, prefix...), inner...) // не nil: в JSON должен быть [], не null
+		if len(items) > limit {
+			items = items[:limit]
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"kind": kind, "items": items})
 }

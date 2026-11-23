@@ -1,0 +1,21 @@
+{
+  "valid": [
+    "",
+    "PROXY geosite:youtube\nDIRECT geoip:ru\n",
+    "#@ YouTube | youtube\nPROXY geosite:youtube\nPROXY domain:youtu.be\n\n#@ Telegram | telegram\nPROXY geosite:telegram\n#~ PROXY geoip:telegram\n\n",
+    "# мои правила\n\nproxy,domain:Example.COM,комментарий\nDIRECT 192.168.0.0/16 # lan\n  DROP keyword:ads\nPROXY@awg1 *.Foo.com\nBLOCK full:bad.example\nbogus line here\nPROXY\n",
+    "PROXY 2001:db8::/32\nDIRECT ::1\nPROXY 10.1.2.3\n",
+    "PROXY domain:a.com\nPROXY domain:b.com\nDIRECT domain:c.com\nPROXY geosite:x\nPROXY geosite:y\n",
+    "PROXY@awg2 geosite:netflix\nPROXY:awg3 domain:z.com\nTUNNEL domain:t.com\nBYPASS cidr:1.2.3.0/24\nREJECT keyword:track\n",
+    "PROXY domain:a.com",
+    "\n\nPROXY domain:a.com\n\n\n# конец\n\n",
+    "#@ Смешанный | \nPROXY geosite:a\nDIRECT geosite:b\n# заметка внутри\nDROP geosite:c # хвост\n#~ DIRECT domain:off.example\n",
+    "#@ Пустой блок | youtube\n\n#@ Второй\nPROXY domain:x.com\n#@ Третий без пустой\nPROXY domain:y.com\n",
+    "# выше блока\n# ещё выше\n#@ С заметкой | github\nPROXY geosite:github\n\n#~ DIRECT domain:lonely.example\n#~ просто комментарий\n"
+  ],
+  "loose": [
+    "PROXY geosite:\n",
+    "PROXY domain:a b\n",
+    "#~PROXY domain:nospace.example\n#@\n#@ | icon\nPROXY domain:q.com\n"
+  ]
+}

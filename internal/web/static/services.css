@@ -1,0 +1,24 @@
+/* Создано scripts/gen-services.mjs: цвета знаков сервисов. Не править руками. */
+.svc-youtube{--svc:#FF0000}
+.svc-telegram{--svc:#26A5E4}
+.svc-google{--svc:#4285F4}
+.svc-gemini{--svc:#8E75B2}
+.svc-anthropic{--svc:#b4bac3}
+.svc-netflix{--svc:#E50914}
+.svc-instagram{--svc:#FF0069}
+.svc-facebook{--svc:#0866FF}
+.svc-twitter{--svc:#b4bac3}
+.svc-tiktok{--svc:#b4bac3}
+.svc-spotify{--svc:#1ED760}
+.svc-discord{--svc:#5865F2}
+.svc-whatsapp{--svc:#25D366}
+.svc-signal{--svc:#3B45FD}
+.svc-steam{--svc:#b4bac3}
+.svc-github{--svc:#b4bac3}
+.svc-twitch{--svc:#9146FF}
+.svc-apple{--svc:#b4bac3}
+.svc-cloudflare{--svc:#F38020}
+.svc-reddit{--svc:#FF4500}
+.svc-zoom{--svc:#0B5CFF}
+.svc-dropbox{--svc:#0061FF}
+.svc-wikipedia{--svc:#b4bac3}

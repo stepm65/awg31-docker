@@ -160,3 +160,35 @@ func TestStoreDownloadValidatesAndReplacesAtomically(t *testing.T) {
 		t.Fatal("ValidURL")
 	}
 }
+
+func TestCategoriesListCachedAndRefreshedOnChange(t *testing.T) {
+	dir := t.TempDir()
+	st := &Store{Dir: dir}
+	if got := st.Categories("geosite"); got != nil {
+		t.Fatalf("без файла категорий нет: %v", got)
+	}
+	data := append(site("YouTube", [2]string{"domain", "youtube.com"}), site("telegram", [2]string{"domain", "t.me"})...)
+	data = append(data, site("youtube", [2]string{"domain", "youtu.be"})...) // повтор в другом регистре
+	if err := os.WriteFile(filepath.Join(dir, "geosite.dat"), data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got := st.Categories("geosite")
+	if len(got) != 2 || got[0] != "telegram" || got[1] != "youtube" {
+		t.Fatalf("имена в нижнем регистре, без повторов, по алфавиту: %v", got)
+	}
+	// файл заменили: кэш обязан обновиться (размер другой)
+	more := append(data, site("netflix", [2]string{"domain", "netflix.com"})...)
+	if err := os.WriteFile(filepath.Join(dir, "geosite.dat"), more, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got = st.Categories("geosite"); len(got) != 3 {
+		t.Fatalf("после замены файла список должен обновиться: %v", got)
+	}
+	// текстовый список и неизвестный вид категорий не имеют
+	if err := os.WriteFile(filepath.Join(dir, "geoip.dat"), []byte("10.0.0.0/8\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if st.Categories("geoip") != nil || st.Categories("other") != nil {
+		t.Fatal("у текстового списка и неизвестного вида категорий нет")
+	}
+}

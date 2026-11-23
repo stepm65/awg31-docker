@@ -36,6 +36,7 @@ const ICONS = {
   x: '<path d="M18 6L6 18M6 6l12 12"/>',
   layers: '<path d="m12 2 9 5-9 5-9-5 9-5Zm-9 10 9 5 9-5M3 17l9 5 9-5"/>',
   merge: '<circle cx="5" cy="6" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="12" r="2.5"/><path d="M7.5 6H11a4 4 0 0 1 4 4v1m-7.5 7H11a4 4 0 0 0 4-4v-1"/>',
+  grip: '<circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/>',
 };
 const svgParser = new DOMParser();
 function icon(name, size = 18) {
@@ -150,6 +151,30 @@ const I18N = {
     polProxyDNS: "DNS через VPN", polDirectDNS: "DNS мимо VPN", polDnsHint: "IP, IP:порт или https://…/dns-query (DoH), через запятую.",
     polSaved: "Правила сохранены.", polSavedWarn: "Правила сохранены, но:",
     polTestTitle: "Проверить", polTestLabel: "Домен или IP-адрес", polTestBtn: "Проверить", polBy: "правило",
+    // редактор маршрутов
+    rtAdd: "Добавить сервис", rtSearch: "Поиск по правилам", rtFltAll: "Все", rtFltProxy: "Через VPN", rtFltDirect: "Напрямую", rtFltDrop: "Блок", rtFltOff: "Выключены",
+    rtColService: "Сервис", rtColConds: "Условия", rtColDest: "Куда", rtColOn: "Вкл.",
+    rtDestProxy: "Через VPN", rtTunnels: "Туннели", rtGroups: "Группы", rtDestDirect: "Напрямую", rtDestDrop: "Блокировать", rtMixed: "Разные", rtGone: "такого нет",
+    rtDestOf: "Куда направить: {name}", rtToggleOn: "Включить правило: {name}", rtToggleOff: "Выключить правило: {name}", rtStateOn: "включено", rtStateOff: "выключено",
+    rtGrip: "Переместить: {name}. Позиция {n} из {m}. Стрелки вверх и вниз меняют порядок.", rtGripLocked: "Порядок нельзя менять, пока включён поиск или фильтр",
+    rtMoved: "{name}: позиция {n} из {m}", rtEdit: "Изменить", rtDup: "Дублировать", rtUp: "Выше", rtDown: "Ниже", rtCopy: "{name} (копия)",
+    rtMore: "ещё {n}", rtCustom: "Свои правила ({n})", rtEmpty: "Без условий", rtNoCond: "нет условий",
+    rtNoRules: "Правил пока нет", rtNoRulesHint: "Добавьте сервис: например, YouTube через VPN, а российские адреса напрямую.",
+    rtNoMatch: "Ничего не найдено", rtNoMatchHint: "Измените поиск или фильтр.",
+    rtOrderHint: "Порядок важен: для доменов побеждает первое совпавшее правило (сверху вниз), для адресов — самая точная сеть. Всё остальное идёт по правилу «Остальной трафик».",
+    rtBadLines: "Движок не понимает строк: {n}. Пока они есть, правила не сохранятся: исправьте их в тексте или удалите.", rtBadShow: "Показать текст", rtBadDrop: "Удалить эти строки",
+    rtOffCond: "выключено", rtMissing: "категории нет в загруженных базах",
+    rtUnsaved: "Есть несохранённые изменения", rtRevert: "Отменить", rtReverted: "Изменения отменены.",
+    rtAdv: "Текст правил", rtAdvHint: "То же самое в виде текста. «#@ Имя | значок» — заголовок блока, «#~ ПРАВИЛО» — выключенная строка; движок видит их как комментарии.",
+    rtSettings: "Списки и DNS", rtPresetLabel: "Источник списков", rtPresetLoyal: "Loyalsoldier (по умолчанию)", rtPresetIplist: "IPList (opencck.org)",
+    rtPresetHint: "Подставляет ссылки на geosite.dat и geoip.dat. После сохранения нажмите «Обновить базы». IPList распространяется под лицензией MIT.",
+    svcRu: "Россия (IP)", svcPrivate: "Локальные сети", rtDlgAdd: "Добавить сервис", rtDlgEdit: "Изменить: {name}", rtCatalog: "Каталог сервисов", rtCatalogHint: "Выбор подставляет название, значок и условия.",
+    rtCatalogSearch: "Найти в каталоге", rtName: "Название", rtConds: "Условия", rtKind: "Тип условия", rtKindAuto: "Автоопределение",
+    rtKindDomain: "Домен и поддомены", rtKindFull: "Только это имя", rtKindKeyword: "Часть имени", rtKindCidr: "Сеть или IP",
+    rtCondValue: "Домены, сети или категории", rtCondAdd: "Добавить", rtCondRemove: "Убрать условие {v}", rtCondNone: "Условий пока нет",
+    rtCondNeed: "Добавьте хотя бы одно условие.", rtCondBad: "Не понял: {v}", rtCondDup: "уже есть: {v}",
+    rtCondHint: "Можно вставить несколько записей через пробел, запятую или с новой строки. Подсказки для geosite и geoip появляются, когда базы загружены.",
+    rtDest: "Куда направить трафик", rtDone: "Готово", rtCancel: "Отмена", rtAdded: "Добавлено: {name}",
     polGeoTitle: "Базы geosite и geoip", polGeoUpdate: "Обновить базы", polGeoUpdated: "Базы geo обновлены.",
     polGeoFile: "Файл", polGeoSize: "Размер", polGeoDate: "Обновлён", polGeoLoaded: "Загружено категорий",
     polGeoHave: "Есть", polGeoNone: "Нет", polGeoMissing: "Нет в базе",
@@ -290,6 +315,30 @@ const I18N = {
     polProxyDNS: "DNS through VPN", polDirectDNS: "DNS bypassing VPN", polDnsHint: "IP, IP:port or https://…/dns-query (DoH), comma-separated.",
     polSaved: "Rules saved.", polSavedWarn: "Rules saved, but:",
     polTestTitle: "Test", polTestLabel: "Domain or IP address", polTestBtn: "Test", polBy: "rule",
+    // routing editor
+    rtAdd: "Add service", rtSearch: "Search rules", rtFltAll: "All", rtFltProxy: "Via VPN", rtFltDirect: "Direct", rtFltDrop: "Blocked", rtFltOff: "Off",
+    rtColService: "Service", rtColConds: "Conditions", rtColDest: "Goes to", rtColOn: "On",
+    rtDestProxy: "Via VPN", rtTunnels: "Tunnels", rtGroups: "Groups", rtDestDirect: "Direct", rtDestDrop: "Block", rtMixed: "Mixed", rtGone: "not found",
+    rtDestOf: "Send to: {name}", rtToggleOn: "Turn on rule: {name}", rtToggleOff: "Turn off rule: {name}", rtStateOn: "on", rtStateOff: "off",
+    rtGrip: "Move: {name}. Position {n} of {m}. Up and down arrows change the order.", rtGripLocked: "The order cannot change while a search or filter is active",
+    rtMoved: "{name}: position {n} of {m}", rtEdit: "Edit", rtDup: "Duplicate", rtUp: "Move up", rtDown: "Move down", rtCopy: "{name} (copy)",
+    rtMore: "{n} more", rtCustom: "Custom rules ({n})", rtEmpty: "No conditions", rtNoCond: "no conditions",
+    rtNoRules: "No rules yet", rtNoRulesHint: "Add a service: for example YouTube through the VPN and Russian addresses direct.",
+    rtNoMatch: "Nothing found", rtNoMatchHint: "Change the search or the filter.",
+    rtOrderHint: "Order matters: for domains the first matching rule wins (top to bottom), for addresses the most specific network. Everything else follows the \"Everything else\" setting.",
+    rtBadLines: "The engine does not understand {n} lines. The rules will not save while they are there: fix them in the text or delete them.", rtBadShow: "Show the text", rtBadDrop: "Delete these lines",
+    rtOffCond: "off", rtMissing: "category is not in the loaded databases",
+    rtUnsaved: "You have unsaved changes", rtRevert: "Discard", rtReverted: "Changes discarded.",
+    rtAdv: "Rules text", rtAdvHint: "The same rules as text. \"#@ Name | icon\" is a block header and \"#~ RULE\" a turned-off line; the engine sees both as comments.",
+    rtSettings: "Lists and DNS", rtPresetLabel: "List source", rtPresetLoyal: "Loyalsoldier (default)", rtPresetIplist: "IPList (opencck.org)",
+    rtPresetHint: "Fills in the geosite.dat and geoip.dat links. After saving, press \"Update databases\". IPList is released under the MIT license.",
+    svcRu: "Russia (IP)", svcPrivate: "Local networks", rtDlgAdd: "Add service", rtDlgEdit: "Edit: {name}", rtCatalog: "Service catalog", rtCatalogHint: "Picking one fills in the name, icon and conditions.",
+    rtCatalogSearch: "Search the catalog", rtName: "Name", rtConds: "Conditions", rtKind: "Condition type", rtKindAuto: "Auto-detect",
+    rtKindDomain: "Domain and subdomains", rtKindFull: "This exact name", rtKindKeyword: "Part of a name", rtKindCidr: "Network or IP",
+    rtCondValue: "Domains, networks or categories", rtCondAdd: "Add", rtCondRemove: "Remove condition {v}", rtCondNone: "No conditions yet",
+    rtCondNeed: "Add at least one condition.", rtCondBad: "Not understood: {v}", rtCondDup: "already there: {v}",
+    rtCondHint: "You can paste several entries separated by spaces, commas or new lines. Suggestions for geosite and geoip appear once the databases are loaded.",
+    rtDest: "Where to send the traffic", rtDone: "Done", rtCancel: "Cancel", rtAdded: "Added: {name}",
     polGeoTitle: "geosite and geoip databases", polGeoUpdate: "Update databases", polGeoUpdated: "Geo databases updated.",
     polGeoFile: "File", polGeoSize: "Size", polGeoDate: "Updated", polGeoLoaded: "Loaded categories",
     polGeoHave: "Present", polGeoNone: "Missing", polGeoMissing: "Not in the database",
@@ -512,7 +561,7 @@ async function refresh(quiet) {
     if (!quiet) say("error", e.message);
   }
   // Открытое меню строки не закрываем перерисовкой по таймеру.
-  if (quiet) { renderSide(); if (!S.dirty && !S.busy && !document.querySelector(".row-menu[open]")) renderMain(); } else { renderSide(); renderMain(); }
+  if (quiet) { renderSide(); if (!S.dirty && !S.busy && !document.querySelector(".row-menu[open]") && !rtTyping()) renderMain(); } else { renderSide(); renderMain(); }
 }
 
 async function boot() {
@@ -1197,32 +1246,402 @@ function pageGroups() {
 }
 
 /* ---------- маршрутизация по правилам и DNS ---------- */
+// Редактор правил: блоки-сервисы поверх того же текста правил. Модель текст <-> блоки лежит в
+// static/rules.js, каталог и значки — в static/services.js (Simple Icons, CC0). Хранилище одно: текст.
+const RULES = window.AWG_RULES, SVC = window.AWG_SERVICES;
+const GEO_PRESETS = {
+  loyal: ["https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat", "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"],
+  iplist: ["https://iplist.opencck.org/?format=geosite&data=domains", "https://iplist.opencck.org/?format=geoip&data=cidr4"],
+};
+const SVG_NS = "http://www.w3.org/2000/svg";
+const fmtNum = (n) => Number(n).toLocaleString(lang === "en" ? "en-US" : "ru-RU");
+const rtEls = {};      // живые узлы текущей страницы: chips, list, notes, bar
+let rtSayTimer = 0;
+
+function rtReset() {
+  const old = S.rt || {};
+  S.rt = { model: RULES.parse((S.polEdit && S.polEdit.rules) || ""), filter: old.filter || "all", q: old.q || "", adv: !!old.adv, uid: old.uid || 0, drag: null };
+}
+const rtUid = (b) => b.uid || (b.uid = ++S.rt.uid);
+// Пока человек работает с полем на странице маршрутов, фоновое обновление её не перерисовывает.
+function rtTyping() {
+  const a = document.activeElement;
+  return !!(S.route.page === "policy" && a && mainEl && mainEl.contains(a) && /^(SELECT|INPUT|TEXTAREA)$/.test(a.tagName));
+}
+
+// Названия каталога на языке интерфейса (у большинства сервисов это бренд, он не переводится).
+const svcName = (s) => (s.id === "ru" ? t("svcRu") : s.id === "private" ? t("svcPrivate") : s.name);
+
+// Название, значок и условия блока для показа.
+function rtInfo(b) {
+  const svc = RULES.service(b, SVC.catalog), conds = RULES.conds(b);
+  let name = b.name;
+  if (!name && svc) name = svcName(svc);
+  if (!name) name = conds.length === 1 ? conds[0].value : conds.length ? t("rtCustom", { n: conds.length }) : t("rtEmpty");
+  const slug = svc ? svc.icon : (b.icon && SVC.icons[b.icon] ? b.icon : null);
+  return { svc, name, slug, id: svc ? svc.id : "", conds };
+}
+function rtTile(info, size) {
+  const tile = h("span", { class: "svc-tile" + (size === "lg" ? " lg" : "") + (info.slug && info.id ? " svc-" + info.id : "") });
+  if (info.slug && SVC.icons[info.slug]) {
+    const s = document.createElementNS(SVG_NS, "svg");
+    s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("aria-hidden", "true"); s.setAttribute("class", "svc-mark");
+    const p = document.createElementNS(SVG_NS, "path");
+    p.setAttribute("d", SVC.icons[info.slug]); p.setAttribute("fill", "currentColor");
+    s.append(p); tile.append(s);
+    return tile;
+  }
+  if (info.id === "private") { tile.classList.add("hue-0"); tile.append(icon("lock", size === "lg" ? 22 : 18)); return tile; }
+  let sum = 0;
+  for (const ch of info.name) sum = (sum * 31 + ch.codePointAt(0)) % 997;
+  tile.classList.add("hue-" + (sum % 8));
+  tile.append(h("span", { "aria-hidden": "true" }, info.id === "ru" ? "RU" : (Array.from(info.name)[0] || "?").toUpperCase()));
+  return tile;
+}
+
+function rtDestOptions(cur) {
+  const tunnels = profiles().map((p) => p.name), groups = ((S.grp && S.grp.groups) || []).map((x) => x.name);
+  const known = new Set(tunnels.concat(groups));
+  const opt = (value, label, extra) => h("option", { value, selected: cur === value, ...(extra || {}) }, label);
+  const out = [];
+  if (cur === "mixed") out.push(opt("mixed", t("rtMixed"), { disabled: true }));
+  out.push(opt("PROXY", t("rtDestProxy")));
+  if (tunnels.length) out.push(h("optgroup", { label: t("rtTunnels") }, tunnels.map((n) => opt("PROXY@" + n, n))));
+  if (groups.length) out.push(h("optgroup", { label: t("rtGroups") }, groups.map((n) => opt("PROXY@" + n, n))));
+  if (cur.startsWith("PROXY@") && !known.has(cur.slice(6))) out.push(opt(cur, cur.slice(6) + " — " + t("rtGone")));
+  out.push(opt("DIRECT", t("rtDestDirect")), opt("DROP", t("rtDestDrop")));
+  return out;
+}
+const rtDestClass = (d) => (d === "DIRECT" ? "direct" : d === "DROP" ? "drop" : d === "mixed" ? "mixed" : "proxy");
+
+function rtCondChip(c, g) {
+  const loaded = c.kind === "geosite" ? (g.site_loaded || {})[c.value] : c.kind === "geoip" ? (g.ip_loaded || {})[c.value] : undefined;
+  const miss = (g.missing || []).includes(c.key);
+  return h("span", { class: "rt-chip k-" + c.kind + (c.off ? " is-off" : "") + (miss ? " is-missing" : "") },
+    h("i", {}, c.kind === "cidr" ? "net" : c.kind), c.value,
+    loaded != null && h("b", {}, fmtNum(loaded)),
+    miss && icon("alert", 13),
+    (c.off || miss) && h("span", { class: "sr-only" }, " (" + [c.off && t("rtOffCond"), miss && t("rtMissing")].filter(Boolean).join(", ") + ")"));
+}
+
+// Одно изменение в редакторе: текст правил пересобирается, страница помечается несохранённой.
+function rtChanged(fk) {
+  S.polEdit.rules = RULES.serialize(S.rt.model);
+  const ta = document.getElementById("pol-rules");
+  if (ta && ta.value !== S.polEdit.rules) ta.value = S.polEdit.rules;
+  rtDirty();
+  rtDraw(fk);
+}
+function rtDirty() {
+  if (!S.dirty) { S.dirty = true; announce(t("rtUnsaved")); }
+  rtBar();
+}
+const rtRevert = () => {
+  S.dirty = false; S.polEdit = { ...S.pol.settings }; rtReset(); renderMain(); announce(t("rtReverted"));
+};
+const rtSave = () => act(async () => {
+  const ed = S.polEdit;
+  try {
+    S.pol = await api("PUT", "/api/policy", { ...ed, geo_update_hours: parseInt(ed.geo_update_hours, 10) || 0 });
+  } catch (e) {
+    throw new Error(e.data && e.data.errors ? e.data.errors.join(" · ") : e.message);
+  }
+  S.polEdit = { ...S.pol.settings }; rtReset();
+  if (S.pol.errors && S.pol.errors.length) { S.dirty = false; rtBar(); throw new Error(t("polSavedWarn") + " " + S.pol.errors.join("; ")); }
+}, t("polSaved"));
+
+function rtBar() {
+  const bar = rtEls.bar;
+  if (!bar) return;
+  bar.hidden = !S.dirty;
+  bar.replaceChildren(
+    h("span", { class: "save-msg" }, icon("info", 16), t("rtUnsaved")),
+    h("div", { class: "actions" },
+      h("button", { class: "btn btn-secondary", type: "button", disabled: S.busy, onclick: rtRevert }, t("rtRevert")),
+      h("button", { class: "btn btn-primary", type: "button", disabled: S.busy, onclick: rtSave }, icon("check", 16), t("foSave"))));
+}
+
+function rtMenu(b, pos, total, locked) {
+  const m = S.rt.model, uid = rtUid(b);
+  const item = (ic, label, fn, o) => h("button", { type: "button", class: o && o.danger ? "is-danger" : "", disabled: !!(o && o.disabled), onclick: (e) => { const d = e.currentTarget.closest("details"); if (d) d.open = false; fn(); } }, icon(ic, 16), label);
+  return h("details", { class: "row-menu" },
+    h("summary", { class: "icon-btn", "data-fk": uid + ":menu", title: t("moreActions"), "aria-label": t("moreActions") + ": " + rtInfo(b).name }, icon("more", 18)),
+    h("div", { class: "row-menu-list" },
+      item("settings", t("rtEdit"), () => rtDialog(b)),
+      item("layers", t("rtDup"), () => {
+        const c = RULES.clone(b), i = rtInfo(b);
+        c.name = t("rtCopy", { name: i.name }); c.icon = i.svc ? i.svc.id : b.icon;
+        RULES.add(m, c, m.items.indexOf(b) + 1);
+        rtChanged(rtUid(c) + ":menu");
+      }),
+      item("arrowUp", t("rtUp"), () => { RULES.step(m, b, -1); rtChanged(uid + ":menu"); announce(t("rtMoved", { name: rtInfo(b).name, n: RULES.blocks(m).indexOf(b) + 1, m: total })); }, { disabled: locked || pos === 0 }),
+      item("arrowDown", t("rtDown"), () => { RULES.step(m, b, 1); rtChanged(uid + ":menu"); announce(t("rtMoved", { name: rtInfo(b).name, n: RULES.blocks(m).indexOf(b) + 1, m: total })); }, { disabled: locked || pos === total - 1 }),
+      item("trash", t("delete"), () => { RULES.remove(m, b); rtChanged(); }, { danger: true })));
+}
+
+function rtRow(b, pos, total, locked, g) {
+  const m = S.rt.model, info = rtInfo(b), uid = rtUid(b), d = RULES.dest(b), off = RULES.isOff(b);
+  const li = h("li", { class: "rt-row" + (off ? " is-off" : ""), "data-uid": String(uid) });
+  const move = (dir) => {
+    RULES.step(m, b, dir);
+    rtChanged(uid + ":grip");
+    announce(t("rtMoved", { name: info.name, n: RULES.blocks(m).indexOf(b) + 1, m: total }));
+  };
+  const grip = h("button", { type: "button", class: "rt-grip", "data-fk": uid + ":grip", disabled: locked,
+    title: locked ? t("rtGripLocked") : "", "aria-label": locked ? t("rtGripLocked") : t("rtGrip", { name: info.name, n: pos + 1, m: total }),
+    onkeydown: (e) => {
+      if (e.key === "ArrowUp" && pos > 0) { e.preventDefault(); move(-1); }
+      else if (e.key === "ArrowDown" && pos < total - 1) { e.preventDefault(); move(1); }
+    } }, icon("grip", 18));
+  // Перетаскивание мышью: строка становится draggable только пока нажата ручка.
+  grip.addEventListener("pointerdown", (e) => { if (!locked && e.pointerType !== "touch") li.setAttribute("draggable", "true"); });
+  const unarm = () => li.removeAttribute("draggable");
+  grip.addEventListener("pointerup", unarm); grip.addEventListener("pointercancel", unarm);
+  li.addEventListener("dragstart", (e) => {
+    if (e.target !== li) return;
+    S.rt.drag = b; li.classList.add("is-dragging");
+    e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", info.name);
+  });
+  li.addEventListener("dragend", () => { S.rt.drag = null; unarm(); rtEls.list && rtEls.list.querySelectorAll(".is-dragging,.drop-before,.drop-after").forEach((x) => x.classList.remove("is-dragging", "drop-before", "drop-after")); });
+  const after = (e) => { const r = li.getBoundingClientRect(); return e.clientY > r.top + r.height / 2; };
+  li.addEventListener("dragover", (e) => {
+    if (!S.rt.drag || S.rt.drag === b) return;
+    e.preventDefault(); e.dataTransfer.dropEffect = "move";
+    const a = after(e); li.classList.toggle("drop-after", a); li.classList.toggle("drop-before", !a);
+  });
+  li.addEventListener("dragleave", (e) => { if (!li.contains(e.relatedTarget)) li.classList.remove("drop-before", "drop-after"); });
+  li.addEventListener("drop", (e) => {
+    const src = S.rt.drag;
+    if (!src || src === b) return;
+    e.preventDefault();
+    const list = RULES.blocks(m);
+    RULES.move(m, src, after(e) ? (list[list.indexOf(b) + 1] || null) : b);
+    S.rt.drag = null;
+    rtChanged(rtUid(src) + ":grip");
+    announce(t("rtMoved", { name: rtInfo(src).name, n: RULES.blocks(m).indexOf(src) + 1, m: total }));
+  });
+
+  const sel = h("select", { class: "rt-dest dest-" + rtDestClass(d), "data-fk": uid + ":dest", "data-keep": "",
+    "aria-label": t("rtDestOf", { name: info.name }),
+    onchange: (e) => { RULES.setDest(b, e.target.value); rtChanged(uid + ":dest"); } }, rtDestOptions(d));
+  const sw = h("button", { type: "button", class: "rt-switch", role: "switch", "aria-checked": String(!off), "data-fk": uid + ":tog",
+    "aria-label": off ? t("rtToggleOn", { name: info.name }) : t("rtToggleOff", { name: info.name }),
+    onclick: () => { RULES.setOff(b, !off); rtChanged(uid + ":tog"); announce(info.name + ": " + (off ? t("rtStateOn") : t("rtStateOff"))); } },
+  h("span", { class: "rt-knob" }), h("span", { class: "sr-only" }, off ? t("rtStateOff") : t("rtStateOn")));
+
+  const MAX = 4, conds = info.conds;
+  li.append(
+    grip,
+    h("div", { class: "rt-svc" }, rtTile(info), h("div", { class: "rt-name" }, h("b", {}, info.name), h("span", {}, conds.length ? t("rtColConds") + ": " + conds.length : t("rtNoCond")))),
+    h("div", { class: "rt-conds" }, conds.slice(0, MAX).map((c) => rtCondChip(c, g)),
+      conds.length > MAX && h("button", { type: "button", class: "rt-chip rt-more", onclick: () => rtDialog(b) }, t("rtMore", { n: conds.length - MAX }))),
+    h("div", { class: "rt-to" }, sel),
+    h("div", { class: "rt-on" }, sw),
+    h("div", { class: "rt-menu" }, rtMenu(b, pos, total, locked)));
+  return li;
+}
+
+function rtDraw(fk) {
+  const R = S.rt, m = R.model, all = RULES.blocks(m), g = (S.pol && S.pol.geo) || {};
+  if (!rtEls.list) return;
+  const q = R.q.trim().toLowerCase();
+  const tests = { all: () => true, proxy: (b) => rtDestClass(RULES.dest(b)) === "proxy", direct: (b) => RULES.dest(b) === "DIRECT", drop: (b) => RULES.dest(b) === "DROP", off: (b) => RULES.isOff(b) };
+  const match = (b) => { if (!q) return true; const i = rtInfo(b); return i.name.toLowerCase().includes(q) || i.conds.some((c) => c.key.includes(q)); };
+  const shown = all.filter((b) => tests[R.filter](b) && match(b));
+  const locked = R.filter !== "all" || q !== "";
+
+  rtEls.chips.replaceChildren(...["all", "proxy", "direct", "drop", "off"].map((k) => h("button", { class: "filter-chip", type: "button", "aria-pressed": String(R.filter === k),
+    onclick: () => { R.filter = k; rtDraw(); announce(t("shownOf", { n: all.filter((b) => tests[k](b) && match(b)).length, m: all.length }) + (k === "all" ? "" : " · " + t("rtFlt" + k[0].toUpperCase() + k.slice(1)))); } },
+  t("rtFlt" + k[0].toUpperCase() + k.slice(1)), h("b", {}, String(all.filter(tests[k]).length)))));
+
+  const bad = RULES.bad(m);
+  rtEls.notes.replaceChildren(...(bad.length ? [h("div", { class: "flash warn rt-bad", role: "status" }, icon("alert", 18),
+    h("div", { class: "msg" }, t("rtBadLines", { n: bad.length }),
+      h("ul", {}, bad.slice(0, 3).map((x) => h("li", {}, h("code", {}, x.text.trim()))), bad.length > 3 && h("li", {}, t("rtMore", { n: bad.length - 3 }))),
+      h("div", { class: "actions" },
+        h("button", { class: "btn btn-secondary btn-small", type: "button", onclick: () => {
+          R.adv = true;
+          const d = document.querySelector(".rt-adv"), ta = document.getElementById("pol-rules");
+          if (d) d.open = true;
+          if (ta) { ta.scrollIntoView({ block: "center" }); ta.focus(); }
+        } }, icon("file", 16), t("rtBadShow")),
+        h("button", { class: "btn btn-secondary btn-small", type: "button", onclick: () => { m.items = m.items.filter((it) => !it.bad); rtChanged(); } }, icon("trash", 16), t("rtBadDrop")))))] : []));
+
+  if (!all.length) {
+    rtEls.list.replaceChildren(h("li", { class: "rt-empty" }, icon("route", 26), h("b", {}, t("rtNoRules")), h("span", {}, t("rtNoRulesHint")),
+      h("button", { class: "btn btn-primary", type: "button", onclick: () => rtDialog(null) }, icon("plus", 16), t("rtAdd"))));
+  } else if (!shown.length) {
+    rtEls.list.replaceChildren(h("li", { class: "rt-empty" }, icon("info", 26), h("b", {}, t("rtNoMatch")), h("span", {}, t("rtNoMatchHint"))));
+  } else {
+    rtEls.list.replaceChildren(...shown.map((b) => rtRow(b, all.indexOf(b), all.length, locked, g)));
+  }
+  if (fk) { const el = rtEls.list.querySelector('[data-fk="' + fk + '"]'); if (el && !el.disabled) el.focus(); }
+}
+
+/* Диалог «Добавить сервис / Изменить»: правки идут в черновик и попадают в правила только по «Готово». */
+function rtDialog(b) {
+  const m = S.rt.model, isNew = !b, info = b ? rtInfo(b) : null;
+  const draft = { t: "block", head: true, name: b ? info.name : "", icon: b ? (info.svc ? info.svc.id : b.icon) : "", hraw: b ? b.hraw : null,
+    pre: b ? b.pre : [], trail: b ? b.trail : 1, lines: b ? b.lines.map((l) => ({ ...l, pre: l.pre.slice() })) : [] };
+  const ui = { dest: b ? RULES.dest(b) : "PROXY", touched: !!b, lastPick: b && info.svc ? svcName(info.svc) : "" };
+  const g = (S.pol && S.pol.geo) || {};
+
+  const dlg = h("dialog", { class: "rt-dialog", "aria-labelledby": "rt-dlg-title" });
+  const err = h("p", { class: "rt-err", role: "alert", hidden: true });
+  const showErr = (s) => { err.textContent = s || ""; err.hidden = !s; };
+  const close = () => { if (dlg.open) dlg.close(); };
+  dlg.addEventListener("close", () => {
+    dlg.remove();
+    setTimeout(() => {
+      if (document.activeElement && document.activeElement !== document.body) return;
+      const el = b ? rtEls.list && rtEls.list.querySelector('[data-fk="' + rtUid(b) + ':menu"]') : document.getElementById("rt-add-btn");
+      if (el) el.focus();
+    });
+  });
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) close(); });
+
+  const nameInp = h("input", { id: "rt-name", type: "text", value: draft.name, maxlength: "60", autocomplete: "off",
+    oninput: (e) => { draft.name = e.target.value; ui.touched = true; } });
+  const tileSlot = h("span", { class: "rt-dlg-tile" });
+  const drawTile = () => tileSlot.replaceChildren(rtTile(draft.name || draft.icon || draft.lines.length ? rtInfo(draft) : { slug: null, id: "", name: "+" }, "lg"));
+
+  // каталог
+  const grid = h("div", { class: "svc-grid", role: "group", "aria-label": t("rtCatalog") });
+  const picks = SVC.catalog.map((s) => {
+    const el = h("button", { type: "button", class: "svc-pick", "aria-pressed": String(draft.icon === s.id), "data-n": (svcName(s) + " " + s.name + " " + s.id).toLowerCase(),
+      onclick: () => {
+        if (!draft.name || draft.name === ui.lastPick) { draft.name = svcName(s); nameInp.value = draft.name; }
+        draft.icon = s.id; ui.lastPick = svcName(s);
+        if (!ui.touched) draft.lines = [];
+        s.conds.forEach((c) => RULES.addCond(draft, c));
+        picks.forEach((p) => p.setAttribute("aria-pressed", String(p === el)));
+        drawConds(); drawTile();
+      } },
+    rtTile({ slug: s.icon, id: s.id, name: svcName(s) }), h("span", {}, svcName(s)));
+    return el;
+  });
+  grid.append(...picks);
+  const find = h("input", { type: "search", id: "rt-find", "aria-label": t("rtCatalogSearch"), placeholder: t("rtCatalogSearch"), autocomplete: "off",
+    oninput: (e) => { const q = e.target.value.trim().toLowerCase(); picks.forEach((p) => { p.hidden = !!q && !p.dataset.n.includes(q); }); } });
+
+  // условия
+  const list = h("ul", { class: "rt-cond-list" });
+  function drawConds() {
+    const cs = RULES.conds(draft);
+    list.replaceChildren(...(cs.length ? cs.map((c, i) => h("li", { class: c.off ? "is-off" : "" },
+      rtCondChip(c, g),
+      h("button", { type: "button", class: "icon-btn", "aria-label": t("rtCondRemove", { v: c.key }), onclick: () => { RULES.removeCond(draft, i); ui.touched = true; drawConds(); drawTile(); showErr(""); } }, icon("x", 16))))
+      : [h("li", { class: "rt-cond-none" }, t("rtCondNone"))]));
+  }
+  const kinds = [["auto", t("rtKindAuto")], ["domain", t("rtKindDomain")], ["full", t("rtKindFull")], ["keyword", t("rtKindKeyword")], ["cidr", t("rtKindCidr")], ["geosite", "geosite"], ["geoip", "geoip"]];
+  const kindSel = h("select", { id: "rt-kind", "aria-label": t("rtKind"), onchange: () => suggest() }, kinds.map(([v, l]) => h("option", { value: v }, l)));
+  const dl = h("datalist", { id: "rt-cats" });
+  const valInp = h("input", { id: "rt-val", type: "text", class: "mono", list: "rt-cats", autocomplete: "off", spellcheck: "false", placeholder: "example.com, 10.0.0.0/8, geosite:youtube",
+    oninput: () => { suggest(); showErr(""); },
+    onkeydown: (e) => { if (e.key === "Enter") { e.preventDefault(); addConds(); } } });
+  const reCat = /^[a-z0-9!@_.:-]{1,64}$/, reHost = /^[a-z0-9_]([a-z0-9_-]{0,62}\.)*[a-z0-9_-]{0,63}$/, reNet = /^[0-9a-f:.]+(\/\d{1,3})?$/i;
+  function addConds() {
+    const toks = valInp.value.split(/[\s,;]+/).filter(Boolean), bad = [], dup = [];
+    let added = 0;
+    for (const tok of toks) {
+      const k = kindSel.value;
+      const hasPrefix = /^(domain|suffix|domain-suffix|full|keyword|domain-keyword|geosite|geoip|cidr|ip-cidr|ip):/i.test(tok);
+      const cond = k !== "auto" && !hasPrefix ? k + ":" + tok : tok;
+      const c = RULES.parseCond(cond);
+      const ok = c.kind === "geosite" || c.kind === "geoip" ? reCat.test(c.value) : c.kind === "cidr" ? reNet.test(c.value) : c.kind === "keyword" ? c.value.length > 0 && c.value.length <= 64 : reHost.test(c.value);
+      if (!ok) { bad.push(tok); continue; }
+      if (RULES.hasCond(draft, c.kind + ":" + c.value)) { dup.push(tok); continue; }
+      RULES.addCond(draft, c.kind + ":" + c.value); added++;
+    }
+    if (added) { ui.touched = true; drawConds(); drawTile(); }
+    valInp.value = bad.join(" ");
+    showErr(bad.length ? t("rtCondBad", { v: bad.join(", ") }) : dup.length ? t("rtCondDup", { v: dup.join(", ") }) : "");
+    dl.replaceChildren();
+    if (!added || bad.length) valInp.focus();
+  }
+  // подсказки категорий: только для geosite/geoip и только когда базы загружены
+  let sugTimer = 0, sugSeq = 0;
+  function suggest() {
+    clearTimeout(sugTimer);
+    sugTimer = setTimeout(async () => {
+      const raw = valInp.value, at = raw.search(/[^\s,;]*$/), head = raw.slice(0, at);
+      let tail = raw.slice(at), kind = kindSel.value, pre = "";
+      const mm = /^(geosite|geoip):(.*)$/i.exec(tail);
+      if (mm) { kind = mm[1].toLowerCase(); tail = mm[2]; pre = kind + ":"; } else if (kind === "geosite" || kind === "geoip") pre = "";
+      if ((kind !== "geosite" && kind !== "geoip") || (!mm && kindSel.value === "auto") || tail.length < 2) { dl.replaceChildren(); return; }
+      const seq = ++sugSeq;
+      try {
+        const r = await api("GET", "/api/geo/categories?kind=" + kind + "&q=" + encodeURIComponent(tail));
+        if (seq !== sugSeq) return;
+        dl.replaceChildren(...(r.items || []).map((x) => h("option", { value: head + pre + x })));
+      } catch (_) { dl.replaceChildren(); }
+    }, 200);
+  }
+
+  const destSel = h("select", { id: "rt-dest", onchange: (e) => { ui.dest = e.target.value; } }, rtDestOptions(ui.dest));
+
+  const commit = () => {
+    if (!RULES.conds(draft).length) { showErr(t("rtCondNeed")); valInp.focus(); return; }
+    if (valInp.value.trim()) { addConds(); if (!err.hidden) return; }
+    if (ui.dest !== "mixed" && (isNew || ui.dest !== RULES.dest(b))) RULES.setDest(draft, ui.dest);
+    const name = draft.name.trim() || rtInfo({ ...draft, name: "" }).name;
+    let target;
+    if (isNew) {
+      target = Object.assign(draft, { name, hraw: null });
+      RULES.add(m, target);
+    } else {
+      const changed = name !== info.name || draft.icon !== (info.svc ? info.svc.id : b.icon);
+      target = Object.assign(b, { name: changed ? name : b.name, icon: draft.icon, lines: draft.lines, head: b.head || changed, hraw: changed ? null : b.hraw });
+    }
+    close();
+    rtChanged(rtUid(target) + ":grip");
+    if (isNew) { announce(t("rtAdded", { name })); const row = rtEls.list.querySelector('[data-uid="' + rtUid(target) + '"]'); if (row) row.scrollIntoView({ block: "nearest" }); }
+  };
+
+  dlg.append(h("form", { class: "rt-dlg", novalidate: true, onsubmit: (e) => { e.preventDefault(); commit(); } },
+    h("header", {}, h("h2", { id: "rt-dlg-title" }, isNew ? t("rtDlgAdd") : t("rtDlgEdit", { name: info.name })),
+      h("button", { type: "button", class: "icon-btn", "aria-label": t("close"), onclick: close }, icon("x", 18))),
+    h("div", { class: "rt-dlg-body" },
+      h("section", {}, h("h3", {}, t("rtCatalog")), h("p", { class: "hint" }, t("rtCatalogHint")), h("div", { class: "field" }, find), grid),
+      h("section", {},
+        h("div", { class: "rt-name-row" }, tileSlot, h("div", { class: "field" }, h("label", { for: "rt-name" }, t("rtName")), nameInp)),
+        h("h3", {}, t("rtConds")), list,
+        h("div", { class: "rt-add" },
+          h("div", { class: "field" }, h("label", { for: "rt-kind" }, t("rtKind")), kindSel),
+          h("div", { class: "field grow" }, h("label", { for: "rt-val" }, t("rtCondValue")), valInp, dl),
+          h("button", { type: "button", class: "btn btn-secondary", onclick: addConds }, icon("plus", 16), t("rtCondAdd"))),
+        h("p", { class: "hint" }, t("rtCondHint")),
+        err,
+        h("div", { class: "field" }, h("label", { for: "rt-dest" }, t("rtDest")), destSel))),
+    h("footer", { class: "actions" },
+      h("button", { type: "button", class: "btn btn-secondary", onclick: close }, t("rtCancel")),
+      h("button", { type: "submit", class: "btn btn-primary" }, icon("check", 16), t("rtDone")))));
+  document.body.append(dlg);
+  drawConds(); drawTile();
+  dlg.showModal();
+  if (window.matchMedia("(pointer: fine)").matches) (isNew ? find : nameInp).focus();
+}
+
 async function loadPolicy(quiet) {
+  const first = !S.polEdit;
   try {
     S.pol = await api("GET", "/api/policy");
-    if (!S.polEdit || !S.dirty) S.polEdit = { ...S.pol.settings };
+    if (!S.polEdit || !S.dirty) { S.polEdit = { ...S.pol.settings }; rtReset(); }
   } catch (e) {
     if (!quiet) { say("error", e.message); renderFlash(); }
   }
-  if (S.route.page === "policy" && !S.dirty && !S.busy) renderMain();
+  if (first || !S.grp) try { S.grp = await api("GET", "/api/groups"); } catch (_) { /* группы нужны только для списка «Куда» */ }
+  if (S.route.page === "policy" && !S.dirty && !S.busy && !rtTyping()) renderMain();
 }
 
 function pagePolicy() {
   if (!S.pol || !S.polEdit) { loadPolicy(); return h("div", {}, heading(t("navInfra"), t("polTitle")), h("div", { class: "loading" }, t("loading"))); }
-  const v = S.pol, st = v.stats || {}, ed = S.polEdit, g = v.geo || {};
-  const dirty = () => { S.dirty = true; };
+  if (!S.rt) rtReset();
+  const v = S.pol, st = v.stats || {}, ed = S.polEdit, g = v.geo || {}, R = S.rt;
+  const dirty = rtDirty;
   const text = (id, key) => h("input", { id, type: "text", class: "mono", value: ed[key] || "", spellcheck: "false",
     oninput: (e) => { ed[key] = e.target.value; dirty(); } });
-  const save = () => act(async () => {
-    try {
-      S.pol = await api("PUT", "/api/policy", { ...ed, geo_update_hours: parseInt(ed.geo_update_hours, 10) || 0 });
-    } catch (e) {
-      throw new Error(e.data && e.data.errors ? e.data.errors.join(" · ") : e.message);
-    }
-    S.polEdit = { ...S.pol.settings };
-    if (S.pol.errors && S.pol.errors.length) throw new Error(t("polSavedWarn") + " " + S.pol.errors.join("; "));
-  }, t("polSaved"));
-  const updateGeo = () => act(async () => { S.pol = await api("POST", "/api/geo/update"); S.polEdit = { ...S.pol.settings }; }, t("polGeoUpdated"));
+  const updateGeo = () => act(async () => { S.pol = await api("POST", "/api/geo/update"); S.polEdit = { ...S.pol.settings }; rtReset(); }, t("polGeoUpdated"));
   const runTest = async () => {
     const q = (document.getElementById("pol-q") || {}).value || "";
     try { S.polTest = await api("POST", "/api/policy/test", { query: q }); } catch (e) { S.polTest = { error: e.message }; }
@@ -1237,7 +1656,19 @@ function pagePolicy() {
   const actName = (a) => (a ? t("polAct_" + String(a).toLowerCase()) : "—");
   const tr = S.polTest;
 
-  return h("div", {},
+  const master = h("button", { type: "button", class: "rt-switch", role: "switch", "aria-checked": String(!!ed.enabled), "aria-labelledby": "rt-master-l",
+    onclick: (e) => { ed.enabled = !ed.enabled; e.currentTarget.setAttribute("aria-checked", String(!!ed.enabled)); dirty(); } }, h("span", { class: "rt-knob" }), h("span", { class: "sr-only" }, t("polEnable")));
+  const search = h("input", { id: "rt-q", type: "search", "data-keep": "", placeholder: t("rtSearch"), "aria-label": t("rtSearch"), autocomplete: "off", value: R.q,
+    oninput: (e) => { R.q = e.target.value; rtDraw(); clearTimeout(rtSayTimer); rtSayTimer = setTimeout(() => announce(t("shownOf", { n: rtEls.list.querySelectorAll(".rt-row").length, m: RULES.blocks(R.model).length })), 500); } });
+  rtEls.chips = h("div", { class: "filter-chips" });
+  rtEls.notes = h("div", { class: "rt-notes" });
+  rtEls.list = h("ol", { class: "rt-list", role: "list" });
+  rtEls.bar = h("div", { class: "save-bar", hidden: !S.dirty });
+
+  const area = h("textarea", { id: "pol-rules", spellcheck: "false", placeholder: "#@ YouTube | youtube\nPROXY geosite:youtube\n\nDIRECT geoip:ru\nPROXY@awg1 domain:example.com\nDROP keyword:ads",
+    oninput: (e) => { ed.rules = e.target.value; dirty(); }, onchange: () => { R.model = RULES.parse(ed.rules || ""); rtDraw(); } }, ed.rules || "");
+
+  const page = h("div", {},
     heading(t("navInfra"), t("polTitle"), t("polSub")),
     !v.gateway && h("div", { class: "flash warn", role: "status" }, icon("info", 18), h("div", { class: "msg" }, t("polNoGateway"))),
     h("div", { class: "grid-stats" },
@@ -1246,27 +1677,39 @@ function pagePolicy() {
       statCard(t("polLearned"), String(st.learned || 0), t("polLearnedNote")),
       statCard(t("polQueries"), String(st.queries || 0), v.dns ? t("polDnsNote", { p: st.proxy || 0, d: st.direct || 0, x: st.dropped || 0 }) : t("polDnsOff"))),
     st.last_error && h("div", { class: "flash error", role: "alert" }, icon("alert", 18), h("div", { class: "msg" }, st.last_error)),
-    h("div", { class: "card" }, h("h2", {}, t("polRulesTitle")),
-      h("form", { onsubmit: (e) => { e.preventDefault(); save(); } },
-        h("label", { class: "check" }, h("input", { type: "checkbox", checked: !!ed.enabled, onchange: (e) => { ed.enabled = e.target.checked; dirty(); } }),
-          h("span", {}, t("polEnable"), h("br"), t("polEnableHint"))),
-        h("div", { class: "fields-grid" },
-          h("div", { class: "field" }, h("label", { for: "pol-def" }, t("polDefault")),
-            h("select", { id: "pol-def", onchange: (e) => { ed.default_action = e.target.value; dirty(); } },
-              ["proxy", "direct"].map((o) => h("option", { value: o, selected: ed.default_action === o }, actName(o)))),
-            h("div", { class: "hint" }, t("polDefaultHint"))),
-          h("div", { class: "field" }, h("label", { for: "pol-upd" }, t("polGeoEvery")),
-            h("input", { id: "pol-upd", type: "number", min: "0", max: "720", value: String(ed.geo_update_hours ?? 24), oninput: (e) => { ed.geo_update_hours = e.target.value; dirty(); } }),
-            h("div", { class: "hint" }, t("polGeoEveryHint")))),
-        h("div", { class: "field" }, h("label", { for: "pol-rules" }, t("polRulesLabel")),
-          h("textarea", { id: "pol-rules", spellcheck: "false", placeholder: "PROXY geosite:youtube\nDIRECT geoip:ru\nPROXY@awg1 domain:example.com\nDROP keyword:ads\nDIRECT 192.168.0.0/16", oninput: (e) => { ed.rules = e.target.value; dirty(); } }, ed.rules || ""),
-          h("div", { class: "hint" }, t("polRulesHint"))),
+    h("div", { class: "card" },
+      h("div", { class: "heading-row" }, h("h2", {}, t("polRulesTitle")),
+        h("button", { id: "rt-add-btn", class: "btn btn-primary", type: "button", onclick: () => rtDialog(null) }, icon("plus", 16), t("rtAdd"))),
+      h("div", { class: "rt-top" },
+        h("div", { class: "rt-master" }, master, h("div", {}, h("b", { id: "rt-master-l" }, t("polEnable")), h("div", { class: "hint" }, t("polEnableHint")))),
+        h("div", { class: "field" }, h("label", { for: "pol-def" }, t("polDefault")),
+          h("select", { id: "pol-def", "data-keep": "", onchange: (e) => { ed.default_action = e.target.value; dirty(); } },
+            ["proxy", "direct"].map((o) => h("option", { value: o, selected: ed.default_action === o }, actName(o)))))),
+      h("div", { class: "rt-tools" }, h("div", { class: "field" }, search), rtEls.chips),
+      rtEls.notes,
+      h("div", { class: "rt-head", "aria-hidden": "true" }, h("span", {}), h("span", {}, t("rtColService")), h("span", {}, t("rtColConds")), h("span", {}, t("rtColDest")), h("span", {}, t("rtColOn")), h("span", {})),
+      rtEls.list,
+      h("p", { class: "hint rt-order" }, t("rtOrderHint")),
+      h("details", { class: "rt-adv", open: R.adv, ontoggle: (e) => { R.adv = e.currentTarget.open; } },
+        h("summary", {}, icon("file", 16), t("rtAdv")),
+        h("p", { class: "hint" }, t("rtAdvHint")),
+        h("div", { class: "field" }, area, h("div", { class: "hint" }, t("polRulesHint"))))),
+    h("div", { class: "card" }, h("h2", {}, t("rtSettings")),
+      h("form", { onsubmit: (e) => { e.preventDefault(); rtSave(); } },
         h("div", { class: "fields-grid" },
           h("div", { class: "field" }, h("label", { for: "pol-pdns" }, t("polProxyDNS")), text("pol-pdns", "proxy_dns"), h("div", { class: "hint" }, t("polDnsHint"))),
           h("div", { class: "field" }, h("label", { for: "pol-ddns" }, t("polDirectDNS")), text("pol-ddns", "direct_dns")),
           h("div", { class: "field" }, h("label", { for: "pol-gs" }, "geosite.dat"), text("pol-gs", "geosite_url")),
-          h("div", { class: "field" }, h("label", { for: "pol-gi" }, "geoip.dat"), text("pol-gi", "geoip_url"))),
-        h("div", { class: "actions" }, h("button", { class: "btn btn-primary", type: "submit", disabled: S.busy }, icon("check", 16), t("foSave"))))),
+          h("div", { class: "field" }, h("label", { for: "pol-gi" }, "geoip.dat"), text("pol-gi", "geoip_url")),
+          h("div", { class: "field" }, h("label", { for: "pol-upd" }, t("polGeoEvery")),
+            h("input", { id: "pol-upd", type: "number", min: "0", max: "720", value: String(ed.geo_update_hours ?? 24), oninput: (e) => { ed.geo_update_hours = e.target.value; dirty(); } }),
+            h("div", { class: "hint" }, t("polGeoEveryHint")))),
+        h("div", { class: "rt-presets" }, h("span", { class: "rt-presets-l" }, t("rtPresetLabel")),
+          ["loyal", "iplist"].map((k) => h("button", { type: "button", class: "filter-chip",
+            "aria-pressed": String(ed.geosite_url === GEO_PRESETS[k][0] && ed.geoip_url === GEO_PRESETS[k][1]),
+            onclick: () => { ed.geosite_url = GEO_PRESETS[k][0]; ed.geoip_url = GEO_PRESETS[k][1]; document.getElementById("pol-gs").value = ed.geosite_url; document.getElementById("pol-gi").value = ed.geoip_url; rtDirty(); renderPresets(); } },
+          t(k === "loyal" ? "rtPresetLoyal" : "rtPresetIplist")))),
+        h("p", { class: "hint" }, t("rtPresetHint")))),
     h("div", { class: "card" }, h("h2", {}, t("polTestTitle")),
       h("form", { onsubmit: (e) => { e.preventDefault(); runTest(); } },
         h("div", { class: "field" }, h("label", { for: "pol-q" }, t("polTestLabel")), h("input", { id: "pol-q", type: "text", class: "mono", placeholder: "www.youtube.com / 77.88.8.8", spellcheck: "false" })),
@@ -1279,7 +1722,14 @@ function pagePolicy() {
         h("tbody", {}, geoRow("geosite.dat", g.geosite, g.site_loaded), geoRow("geoip.dat", g.geoip, g.ip_loaded)))),
       g.missing && g.missing.length > 0 && h("p", { class: "info-line" }, icon("alert", 16), h("span", {}, t("polGeoMissing") + ": " + g.missing.join(", "))),
       g.last_error && h("p", { class: "info-line" }, icon("alert", 16), h("span", {}, g.last_error)),
-      h("div", { class: "actions" }, h("button", { class: "btn btn-secondary", type: "button", disabled: S.busy, onclick: updateGeo }, icon("restart", 16), t("polGeoUpdate")))));
+      h("div", { class: "actions" }, h("button", { class: "btn btn-secondary", type: "button", disabled: S.busy, onclick: updateGeo }, icon("restart", 16), t("polGeoUpdate")))),
+    rtEls.bar);
+  // Переключатели источников подсвечиваются по текущим ссылкам.
+  function renderPresets() {
+    page.querySelectorAll(".rt-presets .filter-chip").forEach((el, i) => { const k = ["loyal", "iplist"][i]; el.setAttribute("aria-pressed", String(ed.geosite_url === GEO_PRESETS[k][0] && ed.geoip_url === GEO_PRESETS[k][1])); });
+  }
+  rtDraw(); rtBar();
+  return page;
 }
 
 /* ---------- интеграция с RouterOS ---------- */

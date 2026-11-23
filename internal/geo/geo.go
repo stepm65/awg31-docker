@@ -376,6 +376,8 @@ type Store struct {
 	MaxSize int64
 
 	mu      sync.RWMutex
+	catMu   sync.Mutex
+	cats    map[string]catCache
 	sites   map[string]*Site
 	ips     map[string]*IP
 	missing []string
@@ -636,4 +638,54 @@ func (s *Store) SiteDomains(cat string, limit int) []string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.sites[cat].Domains(limit)
+}
+
+// catCache — список категорий файла базы; действителен, пока не изменились размер и время файла.
+type catCache struct {
+	size int64
+	mod  time.Time
+	list []string
+}
+
+// Categories — имена категорий из файла базы (kind: "geosite" или "geoip") по алфавиту.
+// Список кэшируется до смены файла: разбор базы на десять с лишним мегабайт не нужен при
+// каждом нажатии клавиши в поиске. Текстовый список категорий не имеет: результат пуст.
+func (s *Store) Categories(kind string) []string {
+	var path string
+	switch kind {
+	case "geosite":
+		path = s.sitePath()
+	case "geoip":
+		path = s.ipPath()
+	default:
+		return nil
+	}
+	st, err := os.Stat(path)
+	if err != nil {
+		return nil
+	}
+	s.catMu.Lock()
+	defer s.catMu.Unlock()
+	if c, ok := s.cats[kind]; ok && c.size == st.Size() && c.mod.Equal(st.ModTime()) {
+		return c.list
+	}
+	data, err := os.ReadFile(path)
+	if err != nil || isText(data) {
+		return nil
+	}
+	seen := map[string]bool{}
+	var list []string
+	_ = eachEntry(data, func(code string, _ []byte) error {
+		if code != "" && !seen[code] {
+			seen[code] = true
+			list = append(list, code)
+		}
+		return nil
+	})
+	sort.Strings(list)
+	if s.cats == nil {
+		s.cats = map[string]catCache{}
+	}
+	s.cats[kind] = catCache{size: st.Size(), mod: st.ModTime(), list: list}
+	return list
 }
