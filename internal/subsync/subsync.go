@@ -148,7 +148,10 @@ func (s *Service) Sync(ctx context.Context, name string) (changed bool, err erro
 			return nil
 		}
 		reopened = false
-		return s.Tunnels.Up(ctx, name, content)
+		// Отмена запроса (закрыли страницу) не должна оставить туннель опущенным.
+		rctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 60*time.Second)
+		defer cancel()
+		return s.Tunnels.Up(rctx, name, content)
 	}
 	fail := func(e error) (bool, error) {
 		if uerr := raise(cur); uerr != nil {

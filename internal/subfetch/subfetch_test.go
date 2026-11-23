@@ -6,10 +6,14 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 )
 
 func pinOf(s *httptest.Server) string {
@@ -305,5 +309,45 @@ func TestPanelStyleTokenInPathAndStatusCodes(t *testing.T) {
 		if strings.Contains(err.Error(), tok) {
 			t.Fatalf("токен попал в текст ошибки: %v", err)
 		}
+	}
+}
+
+func TestHintForTypicalNetworkFailures(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		err  error
+		want string
+	}{
+		{"отмена", context.Canceled, "masquerade"},
+		{"DNS", &net.DNSError{Err: "no such host", Name: "x.invalid"}, "по имени"},
+		{"отказ", syscall.ECONNREFUSED, "адрес и порт"},
+		{"нет маршрута", syscall.ENETUNREACH, "нет маршрута"},
+		{"таймаут", context.DeadlineExceeded, "не ответил вовремя"},
+		{"таймаут соединения", &net.OpError{Op: "dial", Net: "tcp", Err: os.ErrDeadlineExceeded}, "не ответил вовремя"},
+	} {
+		got := explain("h:8443", c.err)
+		if !strings.Contains(got.Error(), "запрос к h:8443 не удался") || !strings.Contains(got.Error(), c.want) {
+			t.Errorf("%s: %q не содержит %q", c.name, got, c.want)
+		}
+		if !errors.Is(got, c.err) {
+			t.Errorf("%s: исходная ошибка потеряна из цепочки", c.name)
+		}
+	}
+	if h := hint(errors.New("что-то своё")); h != "" {
+		t.Errorf("для неизвестной ошибки подсказки быть не должно: %q", h)
+	}
+}
+
+func TestFetchCancelledAndTimeoutGiveReadableErrors(t *testing.T) {
+	s := newSrv(t, func(w http.ResponseWriter, r *http.Request) { <-r.Context().Done() })
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, _, _, err := Fetch(ctx, Options{URL: s.URL, AllowLoopback: true, PinSHA256: pinOf(s)}, "")
+	if err == nil || !errors.Is(err, context.Canceled) || !strings.Contains(err.Error(), "выход в интернет") {
+		t.Fatalf("отмена: %v", err)
+	}
+	_, _, _, err = Fetch(context.Background(), Options{URL: s.URL, AllowLoopback: true, PinSHA256: pinOf(s), Timeout: 200 * time.Millisecond}, "")
+	if err == nil || !strings.Contains(err.Error(), "не ответил вовремя") {
+		t.Fatalf("таймаут: %v", err)
 	}
 }

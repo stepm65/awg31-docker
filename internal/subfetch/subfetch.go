@@ -249,7 +249,7 @@ func Fetch(ctx context.Context, o Options, etag string) (body, newETag string, n
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", "", false, fmt.Errorf("запрос к %s не удался: %w", u.Host, stripURL(err))
+		return "", "", false, explain(u.Host, stripURL(err))
 	}
 	defer resp.Body.Close()
 
@@ -271,6 +271,36 @@ func Fetch(ctx context.Context, o Options, etag string) (body, newETag string, n
 		return "", "", false, errors.New("сервер вернул пустой ответ")
 	}
 	return text + "\n", strings.Trim(resp.Header.Get("ETag"), `" `), false, nil
+}
+
+// explain оформляет сетевую ошибку запроса: к исходному тексту добавляется подсказка,
+// что проверить. Сама ошибка остаётся в цепочке (errors.Is/As работают).
+func explain(host string, err error) error {
+	if h := hint(err); h != "" {
+		return fmt.Errorf("запрос к %s не удался: %w (%s)", host, err, h)
+	}
+	return fmt.Errorf("запрос к %s не удался: %w", host, err)
+}
+
+// hint — пояснение к типичным сбоям сети; пустая строка, если добавить нечего.
+func hint(err error) string {
+	const noNet = "проверьте, что у контейнера есть выход в интернет (на MikroTik — masquerade для адреса контейнера в srcnat) и работает DNS"
+	var dnsErr *net.DNSError
+	switch {
+	case errors.Is(err, context.Canceled):
+		return "запрос прерван, не дождавшись ответа: страницу обновили или закрыли, либо контейнер не смог связаться с сервером; " + noNet
+	case errors.As(err, &dnsErr):
+		return "не удалось найти адрес сервера по имени; " + noNet
+	case errors.Is(err, syscall.ECONNREFUSED):
+		return "сервер отказал в соединении: проверьте адрес и порт ссылки"
+	case errors.Is(err, syscall.ENETUNREACH), errors.Is(err, syscall.EHOSTUNREACH):
+		return "до сервера нет маршрута; " + noNet
+	}
+	var ne net.Error
+	if errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &ne) && ne.Timeout()) {
+		return "сервер не ответил вовремя; " + noNet + ", а сервер доступен с адреса вашего роутера"
+	}
+	return ""
 }
 
 // stripURL убирает из ошибки url.Error полный URL (в нём может быть токен в пути).

@@ -484,3 +484,51 @@ func TestSyncBypassRaisesTunnelBackOnNotModified(t *testing.T) {
 		t.Fatalf("после 304 туннель должен вернуться: downs=%d up=%v", run.downs, run.up)
 	}
 }
+
+// ctxRunner, как настоящий exec, не выполняет команду, если контекст уже отменён.
+type ctxRunner struct{ *scriptRunner }
+
+func (c ctxRunner) Run(ctx context.Context, name string, args ...string) ([]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return c.scriptRunner.Run(ctx, name, args...)
+}
+
+// Если запрос отменили (закрыли страницу), пока туннель опущен ради обхода,
+// туннель всё равно должен подняться обратно.
+func TestSyncCancelDuringBypassStillRaisesTunnel(t *testing.T) {
+	oldConf := confWith("192.0.2.1:51820")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var run *scriptRunner
+	svc, st, run, _ := scripted(t, func(w http.ResponseWriter, r *http.Request) {
+		if run.isUp() { // первый запрос идёт через «мёртвый» туннель
+			hj, _ := w.(http.Hijacker)
+			c, _, _ := hj.Hijack()
+			_ = c.Close()
+			return
+		}
+		cancel() // второй запрос (туннель опущен): пользователь закрыл страницу
+		<-r.Context().Done()
+	})
+	svc.Tunnels = tunnel.New(ctxRunner{run}, tunnel.Options{RunDir: t.TempDir()})
+	_ = st.WriteProfile("wg0", oldConf)
+	if err := svc.Tunnels.Up(context.Background(), "wg0", oldConf); err != nil {
+		t.Fatal(err)
+	}
+	run.mu.Lock()
+	run.handshake = time.Now().Unix() - 3600
+	run.mu.Unlock()
+
+	_, err := svc.Sync(ctx, "wg0")
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("ожидалась отмена запроса, получено: %v", err)
+	}
+	if strings.Contains(err.Error(), "прежний туннель не поднялся") {
+		t.Fatalf("туннель не восстановлен после отмены: %v", err)
+	}
+	if !run.isUp() {
+		t.Fatal("туннель остался опущенным после отмены запроса")
+	}
+}
