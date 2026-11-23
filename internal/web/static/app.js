@@ -224,7 +224,7 @@ const I18N = {
   },
   en: {
     console: "AWG CONSOLE", refresh: "Refresh", logout: "Sign out", save: "Save", delete: "Delete",
-    up: "Bring up", down: "Bring down", running: "Running", stopped: "Stopped", never: "never",
+    up: "Turn on", down: "Turn off", running: "Running", stopped: "Stopped", never: "never",
     ago_s: "{n}s ago", ago_m: "{n}m ago", ago_h: "{n}h ago", ago_d: "{n}d ago",
     loading: "Loading…", yes: "yes", no: "no", back: "Back to list", confirmDelete: "Confirm deletion",
     version: "Version", language: "Language", close: "Close",
@@ -245,7 +245,7 @@ const I18N = {
     statusTitle: "System status", level_ok: "Healthy", level_warn: "Attention", level_crit: "Failure", level_info: "No data",
     sumOk: "All running tunnels are working", sumOkDetail: "{up} of {total} running, each with a fresh handshake.",
     sumEmpty: "No profiles yet", sumEmptyDetail: "Add a profile and the tunnel state will appear here.",
-    sumNoneUp: "No tunnel is running", sumNoneUpDetail: "Profiles: {total}. Bring up the one you need from the profile list.",
+    sumNoneUp: "No tunnel is running", sumNoneUpDetail: "Profiles: {total}. Turn on the one you need from the profile list.",
     sumWait: "No fresh handshake", sumWaitDetail: "Waiting for a handshake: {names}. A handshake counts as fresh for {min} min.",
     sumErr: "Some profiles have an error", sumErrDetail: "Check: {names}.", sumSubErr: "A subscription failed to update",
     sumTunnelErr: "Could not read the tunnel state", sumNetErr: "Routing error",
