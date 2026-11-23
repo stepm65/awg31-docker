@@ -16,14 +16,20 @@
 # --- Параметры ---
 # Диск для образа и данных: USB/SD, не внутренняя NAND.
 :local disk "usb1"
-# Для проверки без флешки: :local disk "" — тогда всё лежит на встроенной памяти роутера
-# (каталог awg31/). Нужно около 60 МБ свободного места (/system/resource/print, free-hdd-space);
-# для постоянной работы лучше USB/SD: на NAND много записей быстро её изнашивают.
+# Без флешки есть два варианта проверки:
+#  а) :local disk "" — всё на встроенной памяти (каталог awg31/). Нужно около 60 МиБ свободного
+#     места (образ после распаковки ~35 МиБ плюс сам .tar); на NAND много записей её изнашивают;
+#  б) в оперативной памяти: сначала `/disk/add type=tmpfs tmpfs-max-size=100M` (появится диск
+#     tmp1), затем :local disk "tmp1" и :local datadir "awg31/data" (данные остаются на флеш,
+#     они небольшие). После перезагрузки роутера содержимое tmp1 пропадает: выполните
+#     `/container/remove [find name=awg31]` и запустите скрипт снова.
 # ВАЖНО: значения задаются ЗДЕСЬ, в файле. Команда `:local tarfile ...` в консоли в импортируемый
 # скрипт не передаётся.
 # Офлайн-установка: путь к .tar нужной архитектуры (awg31-0.7.0-linux-arm64.tar или
 # awg31-0.7.0-linux-arm-v7.tar). Пусто — образ скачивается из реестра.
 :local tarfile ""
+# Куда класть данные (профили, пароль, сертификат). Пусто — рядом с образом (<disk>/awg31/data).
+:local datadir ""
 # Образ в реестре (многоархитектурный: RouterOS берёт arm64 или arm сам).
 # Если ваша версия не принимает реестр в имени, задайте
 # /container/config/set registry-url=https://ghcr.io и укажите имя без ghcr.io/.
@@ -39,6 +45,9 @@
 # --- 0. Проверки ---
 :local base "awg31"
 :if ([:len $disk] > 0) do={ :set base ($disk . "/awg31") }
+:local datapath ($base . "/data")
+:if ([:len $datadir] > 0) do={ :set datapath $datadir }
+:if (([:len $disk] > 0) && ([:len [/file/find name=$disk]] = 0)) do={ :error ("диск " . $disk . " не найден в /file (/disk/print)") }
 :if ([:len $disk] = 0) do={
   :local free [/system/resource/get free-hdd-space]
   :put ("встроенная память: свободно " . ($free / 1048576) . " МиБ")
@@ -82,7 +91,7 @@
 
 # --- 3. Том для данных (профили, пароль, сертификат); пересоздаётся, чтобы подхватить новый путь ---
 /container/mounts/remove [find list="awg31-data"]
-/container/mounts/add list="awg31-data" src=($base . "/data") dst="/data"
+/container/mounts/add list="awg31-data" src=$datapath dst="/data"
 
 # --- 4. Контейнер ---
 :if ([:len [/container/find name="awg31"]] = 0) do={
