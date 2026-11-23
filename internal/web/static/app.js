@@ -167,7 +167,7 @@ const I18N = {
     rtUnsaved: "Есть несохранённые изменения", rtRevert: "Отменить", rtReverted: "Изменения отменены.",
     rtAdv: "Текст правил", rtAdvHint: "То же самое в виде текста. «#@ Имя | значок» — заголовок блока, «#~ ПРАВИЛО» — выключенная строка; движок видит их как комментарии.",
     rtSettings: "Списки и DNS", rtPresetLabel: "Источник списков", rtPresetLoyal: "Loyalsoldier (по умолчанию)", rtPresetIplist: "IPList (opencck.org)",
-    rtPresetHint: "Подставляет ссылки на geosite.dat и geoip.dat. После сохранения нажмите «Обновить базы». IPList распространяется под лицензией MIT.",
+    rtPresetHint: "Подставляет ссылки на geosite.dat и geoip.dat. После сохранения нажмите «Обновить базы». У IPList свои имена тегов: например geoip:telegram.org вместо geoip:telegram, каталог сервисов подставляет их сам. IPList распространяется под лицензией MIT.",
     svcRu: "Россия (IP)", svcPrivate: "Локальные сети", rtDlgAdd: "Добавить сервис", rtDlgEdit: "Изменить: {name}", rtCatalog: "Каталог сервисов", rtCatalogHint: "Выбор подставляет название, значок и условия.",
     rtCatalogSearch: "Найти в каталоге", rtName: "Название", rtConds: "Условия", rtKind: "Тип условия", rtKindAuto: "Автоопределение",
     rtKindDomain: "Домен и поддомены", rtKindFull: "Только это имя", rtKindKeyword: "Часть имени", rtKindCidr: "Сеть или IP",
@@ -331,7 +331,7 @@ const I18N = {
     rtUnsaved: "You have unsaved changes", rtRevert: "Discard", rtReverted: "Changes discarded.",
     rtAdv: "Rules text", rtAdvHint: "The same rules as text. \"#@ Name | icon\" is a block header and \"#~ RULE\" a turned-off line; the engine sees both as comments.",
     rtSettings: "Lists and DNS", rtPresetLabel: "List source", rtPresetLoyal: "Loyalsoldier (default)", rtPresetIplist: "IPList (opencck.org)",
-    rtPresetHint: "Fills in the geosite.dat and geoip.dat links. After saving, press \"Update databases\". IPList is released under the MIT license.",
+    rtPresetHint: "Fills in the geosite.dat and geoip.dat links. After saving, press \"Update databases\". IPList names its tags differently, for example geoip:telegram.org instead of geoip:telegram; the service catalog fills them in for you. IPList is released under the MIT license.",
     svcRu: "Russia (IP)", svcPrivate: "Local networks", rtDlgAdd: "Add service", rtDlgEdit: "Edit: {name}", rtCatalog: "Service catalog", rtCatalogHint: "Picking one fills in the name, icon and conditions.",
     rtCatalogSearch: "Search the catalog", rtName: "Name", rtConds: "Conditions", rtKind: "Condition type", rtKindAuto: "Auto-detect",
     rtKindDomain: "Domain and subdomains", rtKindFull: "This exact name", rtKindKeyword: "Part of a name", rtKindCidr: "Network or IP",
@@ -1266,6 +1266,30 @@ const GEO_PRESETS = {
   loyal: ["https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat", "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"],
   iplist: ["https://iplist.opencck.org/?format=geosite&data=domains", "https://iplist.opencck.org/?format=geoip&data=cidr4"],
 };
+// У IPList теги называются иначе: это имя портала (telegram.org) или группы (messengers), а не
+// «telegram» как у Loyalsoldier. Пока выбран IPList, каталог подставляет его имена. Сервисов,
+// которых в IPList нет (Google, Apple, Steam и др.), здесь нет, для них остаются обычные теги.
+const SVC_IPLIST = {
+  youtube: ["geosite:youtube.com", "geoip:youtube.com"],
+  telegram: ["geosite:telegram.org", "geoip:telegram.org"],
+  openai: ["geosite:chatgpt.com", "geoip:chatgpt.com"],
+  anthropic: ["geosite:claude.ai", "geoip:claude.ai"],
+  netflix: ["geosite:netflix.com", "geoip:netflix.com"],
+  instagram: ["geosite:instagram.com", "geoip:instagram.com"],
+  facebook: ["geosite:facebook.com", "geoip:facebook.com"],
+  twitter: ["geosite:x.com", "geoip:x.com"],
+  tiktok: ["geosite:tiktok.com", "geoip:tiktok.com"],
+  spotify: ["geosite:spotify.com", "geoip:spotify.com"],
+  discord: ["geosite:discord", "geoip:discord"],
+  whatsapp: ["geosite:whatsapp.com", "geoip:whatsapp.com"],
+  signal: ["geosite:signal.org", "geoip:signal.org"],
+  linkedin: ["geosite:linkedin.com", "geoip:linkedin.com"],
+};
+// Условия записи каталога под источник баз, который сейчас выбран на странице.
+function svcConds(s) {
+  const ed = S.polEdit || {}, alt = SVC_IPLIST[s.id];
+  return alt && ed.geosite_url === GEO_PRESETS.iplist[0] && ed.geoip_url === GEO_PRESETS.iplist[1] ? alt : s.conds;
+}
 const SVG_NS = "http://www.w3.org/2000/svg";
 const fmtNum = (n) => Number(n).toLocaleString(lang === "en" ? "en-US" : "ru-RU");
 const rtEls = {};      // живые узлы текущей страницы: chips, list, notes, bar
@@ -1527,7 +1551,7 @@ function rtDialog(b) {
         if (!draft.name || draft.name === ui.lastPick) { draft.name = svcName(s); nameInp.value = draft.name; }
         draft.icon = s.id; ui.lastPick = svcName(s);
         if (!ui.touched) draft.lines = [];
-        s.conds.forEach((c) => RULES.addCond(draft, c));
+        svcConds(s).forEach((c) => RULES.addCond(draft, c));
         picks.forEach((p) => p.setAttribute("aria-pressed", String(p === el)));
         drawConds(); drawTile();
       } },
