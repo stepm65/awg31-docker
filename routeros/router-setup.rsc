@@ -5,7 +5,8 @@
 #  Что делает:
 #   - таблица маршрутизации awg31: default -> контейнер + blackhole-страховка
 #     (если контейнер или туннель недоступен, трафик из списка не уходит мимо VPN);
-#   - mangle: в туннель идёт только трафик из LAN к адресам из address-list «awg31»;
+#   - mangle: в туннель идёт только трафик из LAN к адресам из address-list «awg31»; правила awg31
+#     ставятся выше остальных mangle-правил (свои метки роутера не перехватывают этот трафик);
 #   - fasttrack не перехватывает помеченные соединения;
 #   - srcnat для самого контейнера, разрешение ему выхода в интернет (правила awg31_icmp и
 #     awg31_out только для его veth) и запрет новых соединений к нему с WAN;
@@ -94,6 +95,24 @@
 }
 :if ([:len [/ip/firewall/mangle/find comment="awg31_accept_container"]] > 0) do={
   /ip/firewall/mangle/set [find comment="awg31_accept_container"] src-address=$ip
+}
+
+# --- 4a. Порядок: правила awg31 стоят выше остальных mangle-правил ---
+# Если на роутере уже есть своя маркировка (другой VPN, SMTP и т.п.), её правила с accept или
+# passthrough=no останавливают обработку раньше нас, и трафик к адресам из списка не доходит до
+# awg31. Список awg31 пользователь задаёт явно, поэтому его трафик обрабатывается первым.
+# Оставить правила в конце цепочки: :global AWG31LAST true
+:global AWG31LAST
+:local last false
+:if ([:typeof $AWG31LAST] = "bool") do={ :set last $AWG31LAST }
+:if (!$last) do={
+  :foreach c in={"awg31_route";"awg31_mark_conn";"awg31_accept_container"} do={
+    :local id [/ip/firewall/mangle/find comment=$c]
+    :if ([:len $id] > 0) do={
+      :do { /ip/firewall/mangle/move numbers=$id destination=[:pick [/ip/firewall/mangle/find] 0] } on-error={}
+    }
+  }
+  :put "+ awg31 mangle rules are above all other mangle rules"
 }
 
 # --- 5. srcnat контейнера, выход контейнера в интернет и защита консоли от WAN ---
@@ -189,6 +208,14 @@
     :if ([:len [/ipv6/firewall/filter/find comment="awg31_no_wan"]] = 0) do={
       /ipv6/firewall/filter/add chain=forward action=drop connection-state=new in-interface-list=WAN dst-address=$ip6 \
         comment="awg31_no_wan"
+    }
+    :if (!$last) do={
+      :foreach c in={"awg31_route";"awg31_mark_conn";"awg31_accept_container"} do={
+        :local id [/ipv6/firewall/mangle/find comment=$c]
+        :if ([:len $id] > 0) do={
+          :do { /ipv6/firewall/mangle/move numbers=$id destination=[:pick [/ipv6/firewall/mangle/find] 0] } on-error={}
+        }
+      }
     }
     :put "+ IPv6: route, mangle, NAT and WAN protection"
   } on-error={ :put "IPv6 is disabled or unavailable on the router: IPv6 part skipped" }
