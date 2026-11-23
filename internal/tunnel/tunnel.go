@@ -36,7 +36,40 @@ type Runner interface {
 }
 
 // ExecRunner — реальный запуск процессов.
-type ExecRunner struct{ Timeout time.Duration }
+type ExecRunner struct {
+	Timeout time.Duration
+	// WaitDelay — сколько ждать закрытия каналов вывода после выхода команды
+	// (по умолчанию 3 с). awg-quick запускает демон amneziawg-go, и тот может
+	// унаследовать каналы вывода: без этого предела Run не вернулся бы, пока жив демон.
+	WaitDelay time.Duration
+}
+
+// maxRunOutput — сколько вывода команды храним.
+const maxRunOutput = 256 << 10
+
+// syncBuf — буфер вывода, безопасный для записи из горутины, которую остановил WaitDelay.
+type syncBuf struct {
+	mu sync.Mutex
+	b  []byte
+}
+
+func (s *syncBuf) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if room := maxRunOutput - len(s.b); room > 0 {
+		if len(p) < room {
+			room = len(p)
+		}
+		s.b = append(s.b, p[:room]...)
+	}
+	return len(p), nil
+}
+
+func (s *syncBuf) bytes() []byte {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]byte(nil), s.b...)
+}
 
 // Run выполняет команду без shell и возвращает её вывод.
 func (r ExecRunner) Run(ctx context.Context, name string, args ...string) ([]byte, error) {
@@ -47,12 +80,23 @@ func (r ExecRunner) Run(ctx context.Context, name string, args ...string) ([]byt
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, name, args...)
+	// LOG_LEVEL не задаём: при нём демон amneziawg-go, запущенный awg-quick, наследует
+	// наши каналы stdout/stderr и держит их открытыми, пока работает туннель.
 	cmd.Env = []string{
 		"PATH=/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 		"WG_QUICK_USERSPACE_IMPLEMENTATION=amneziawg-go",
-		"LOG_LEVEL=error",
 	}
-	out, err := cmd.CombinedOutput()
+	cmd.WaitDelay = r.WaitDelay
+	if cmd.WaitDelay <= 0 {
+		cmd.WaitDelay = 3 * time.Second
+	}
+	var buf syncBuf
+	cmd.Stdout, cmd.Stderr = &buf, &buf
+	err := cmd.Run()
+	if errors.Is(err, exec.ErrWaitDelay) && cmd.ProcessState != nil && cmd.ProcessState.Success() {
+		err = nil // команда завершилась успешно, каналы держит оставшийся в фоне демон
+	}
+	out := buf.bytes()
 	if err != nil {
 		return out, fmt.Errorf("%s %s: %w: %s", name, firstArg(args), err, Redact(string(out)))
 	}

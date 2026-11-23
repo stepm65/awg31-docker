@@ -4,7 +4,7 @@
 
 An **AmneziaWG 3.1** client in a container with a bilingual (RU/EN) web console that looks and behaves like the [amneziawg31-installer](https://github.com/stepm65/amneziawg31-installer) panel: `.conf` profiles, bringing tunnels up and down, autostart after a reboot and **a subscription taken straight from your panel**. Runs in Docker and **on MikroTik routers (arm64 and arm32)**. No CDN, no third-party Go modules, no web terminal.
 
-Version **0.7.0** · GPL-3.0 licence · not affiliated with the AmneziaVPN developers.
+Version **0.7.1** · GPL-3.0 licence · not affiliated with the AmneziaVPN developers.
 
 ![Overview](docs/screenshots/en-overview.png)
 
