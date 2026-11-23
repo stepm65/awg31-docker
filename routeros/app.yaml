@@ -1,0 +1,47 @@
+# RouterOS /app (7.22+): клиент AmneziaWG 3.1 с веб-консолью.
+# Установка без своего App Store:
+#   /app/add yaml-url="https://raw.githubusercontent.com/stepm65/awg31-docker/main/routeros/app.yaml"
+# или добавьте этот файл в свой стор (apps/awg31/app.yaml) и пересоберите store.yaml.
+# Образ многоархитектурный: RouterOS сам берёт arm64 или arm (ARMv7).
+name: awg31
+descr: "AmneziaWG 3.1 Console — клиент AmneziaWG 3.1 с веб-консолью (RU/EN), подпиской из панели AWG Console и режимом шлюза. arm64 и arm (ARMv7)."
+page: https://github.com/stepm65/awg31-docker
+category: networking
+icon: https://raw.githubusercontent.com/stepm65/awg31-docker/main/routeros/icon.png
+url-path: /
+credentials: "Первичная настройка по одноразовому токену из журнала контейнера: /log/print where message~\"токен\""
+auto-update: false
+
+services:
+  awg31:
+    image: ghcr.io/stepm65/awg31-docker:0.7.0
+    hostname: awg31
+    ports:
+      - name: web
+        target: 8443
+        published: 8443
+        protocol: tcp
+        app_protocol: https
+      # Режим сервера: профиль с ListenPort = 51820 без Endpoint у пиров.
+      # Входящий порт с WAN открывается правилами awg31_server_* из router-setup.rsc.
+      - name: awg-server
+        target: 51820
+        published: 51821
+        protocol: udp
+    environment:
+      TZ: UTC
+      UI_TLS: auto
+      AWG_AUTO_ROUTE: "on"
+      # Проба для /tool/netwatch: только код 200/503 (порт не публикуется наружу).
+      HEALTH_LISTEN: ":8081"
+      HEALTH_MAX_HANDSHAKE_SEC: "180"
+      # Небольшим роутерам (256 МБ ОЗУ) — мягкий предел памяти для Go.
+      # DNS-форвардер для доменных правил (geosite, domain:): роутер шлёт DNS сюда.
+      DNS_ENABLE: "on"
+      GOMEMLIMIT: "64MiB"
+    volumes:
+      - awg31-data:/data
+    restart: unless-stopped
+
+volumes:
+  awg31-data: {}
