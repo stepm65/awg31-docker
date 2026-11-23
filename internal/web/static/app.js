@@ -10,6 +10,7 @@ const ICONS = {
   arrowUp: '<path d="M12 19V5m-6 6 6-6 6 6"/>',
   arrowDown: '<path d="M12 5v14m-6-6 6 6 6-6"/>',
   star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+  more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
   home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
   server: '<rect x="3" y="3" width="18" height="8" rx="2"/><rect x="3" y="13" width="18" height="8" rx="2"/><path d="M7 7h.01M7 17h.01"/>',
   settings: '<path d="M4 7h9m4 0h3M4 17h3m4 0h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
@@ -50,7 +51,7 @@ function icon(name, size = 18) {
 const I18N = {
   ru: {
     console: "AWG CONSOLE", refresh: "Обновить", logout: "Выход", save: "Сохранить", delete: "Удалить",
-    up: "Поднять", down: "Опустить", running: "Запущен", stopped: "Остановлен", never: "не было",
+    up: "Включить", down: "Выключить", running: "Запущен", stopped: "Остановлен", never: "не было",
     ago_s: "{n} с назад", ago_m: "{n} мин назад", ago_h: "{n} ч назад", ago_d: "{n} дн назад",
     loading: "Загрузка…", yes: "да", no: "нет", back: "К списку", confirmDelete: "Подтвердить удаление",
     version: "Версия", language: "Язык", close: "Закрыть",
@@ -65,11 +66,22 @@ const I18N = {
     setupEyebrow: "AMNEZIAWG 3.1 / SETUP", setupToken: "Токен настройки", passwordNew: "Новый пароль (не короче 10 символов)",
     passwordRepeat: "Повторите пароль", createAdmin: "Создать администратора", passwordsDiffer: "Пароли не совпадают.",
     // обзор
-    overviewTitle: "Обзор", statTunnels: "Туннели", statTunnelsNote: "поднято / всего", statRx: "Получено", statTx: "Отправлено",
+    overviewTitle: "Обзор", statTunnels: "Туннели", statTunnelsNote: "включено / всего", statRx: "Получено", statTx: "Отправлено",
     statHandshake: "Рукопожатие", statHandshakeNote: "последнее по всем пирам", statSumNote: "сумма по всем туннелям", profilesTitle: "Профили AWG",
     manageAll: "Все профили", manage: "Управление", rx: "Получение", tx: "Отправка", handshake: "Рукопожатие",
     noProfiles: "Профилей пока нет", noProfilesHint: "Добавьте .conf или подключите подписку вашей панели.", addProfile: "Добавить профиль",
     tunnelError: "Не удалось получить состояние туннелей: {err}",
+    statusTitle: "Состояние системы", level_ok: "В норме", level_warn: "Внимание", level_crit: "Сбой", level_info: "Нет данных",
+    sumOk: "Все запущенные туннели работают", sumOkDetail: "Запущено {up} из {total}, у каждого свежее рукопожатие.",
+    sumEmpty: "Профилей пока нет", sumEmptyDetail: "Добавьте профиль, и здесь появится состояние туннелей.",
+    sumNoneUp: "Ни один туннель не запущен", sumNoneUpDetail: "Профилей: {total}. Включите нужный туннель в списке профилей.",
+    sumWait: "Нет свежего рукопожатия", sumWaitDetail: "Ждут рукопожатия: {names}. Свежим считается рукопожатие не старше {min} мин.",
+    sumErr: "Есть профили с ошибкой", sumErrDetail: "Проверьте: {names}.", sumSubErr: "Подписка не обновилась",
+    sumTunnelErr: "Не удалось получить состояние туннелей", sumNetErr: "Ошибка маршрутизации",
+    sumLost: "Нет связи с демоном", sumLostDetail: "Данные не обновлялись {s} с. Повторяю каждые 5 с.",
+    stWaiting: "Ждёт рукопожатия", stError: "Ошибка", rateNow: "сейчас {v}", perSec: "/с",
+    fltLabel: "Фильтр по состоянию", fltAll: "Все", fltLive: "Работают", fltWait: "Ждут рукопожатия", fltStopped: "Остановлены", fltBad: "С ошибкой",
+    noMatch: "В этом фильтре профилей нет", showAll: "Показать все", shownOf: "Показано {n} из {m}", moreActions: "Ещё действия",
     // профили
     profilesHeading: "Профили", profilesSub: "Конфигурации AmneziaWG 3.1 и их подписки.",
     colName: "Имя", colAddress: "Адрес", colState: "Состояние", colTraffic: "Трафик", colSub: "Подписка", colActions: "Действия",
@@ -100,7 +112,7 @@ const I18N = {
     nameHint: "Латиница, цифры, _ и -, до 15 символов: это и имя интерфейса.", modeConf: "Вставить .conf", modeSub: "Подписка панели", create: "Создать профиль",
     created: "Профиль создан.", needName: "Укажите имя профиля.",
     // действия
-    upDone: "Туннель {name} поднят.", downDone: "Туннель {name} опущен.", deleted: "Профиль {name} удалён.",
+    upDone: "Туннель {name} включён.", downDone: "Туннель {name} выключен.", deleted: "Профиль {name} удалён.",
     // обслуживание
     maintTitle: "Обслуживание", maintSub: "Пароль, версия и состояние защиты.", pwTitle: "Пароль администратора",
     pwCurrent: "Текущий пароль", pwNew: "Новый пароль", pwRepeat: "Повторите новый пароль", pwChange: "Сменить пароль",
@@ -111,8 +123,8 @@ const I18N = {
     foNoGateway: "Резервирование работает только в режиме шлюза: включите AWG_AUTO_ROUTE и проверьте LAN-интерфейс на странице «Обслуживание».",
     foMode: "Режим", fo_mode_off: "Вручную", fo_mode_standby: "Горячий резерв", fo_mode_switch: "Переключение",
     foModeNote_off: "Туннели поднимаются и выбираются основным вручную.",
-    foModeNote_standby: "Все туннели из списка подняты; при сбое трафик мгновенно уходит в следующий.",
-    foModeNote_switch: "Поднят только основной; при сбое он опускается и поднимается следующий.",
+    foModeNote_standby: "Все туннели из списка включены; при сбое трафик мгновенно уходит в следующий.",
+    foModeNote_switch: "Включён только основной; при сбое он выключается и включается следующий.",
     foTrigger: "Признак сбоя", fo_trigger_hybrid: "Рукопожатие и проба", fo_trigger_handshake: "Только рукопожатие", fo_trigger_probe: "Только проба",
     foProbe: "Цель пробы (IP:порт)", foProbeHint: "TCP-соединение через каждый туннель. Только IP: имя пришлось бы разрешать через неисправный туннель.",
     foInterval: "Период проверки, с", foThreshold: "Неудач подряд до переключения", foCooldown: "Пауза после сбоя, с",
@@ -124,7 +136,7 @@ const I18N = {
     foSwitches: "Переключений", foNoSwitches: "с момента запуска не было", foLastCheck: "Последняя проверка", foEvery: "каждые {n} с",
     foCooldownLeft: "пауза ещё {n} с", foProbeOk: "проба {ms} мс", foProbeFail: "проба не прошла",
     foState_healthy: "Исправен", foState_starting: "Запускается", foState_failing: "Сбои", foState_unhealthy: "Неисправен",
-    foState_cooldown: "Пауза", foState_down: "Не поднят", foState_excluded: "Не участвует",
+    foState_cooldown: "Пауза", foState_down: "Не включён", foState_excluded: "Не участвует",
     navPolicy: "Маршрутизация", polTitle: "Маршрутизация и DNS", polSub: "Правила по доменам, geosite, geoip и сетям: что идёт через VPN, что мимо, что блокируется.",
     polNoGateway: "Правила работают только в режиме шлюза: включите AWG_AUTO_ROUTE и проверьте LAN-интерфейс на странице «Обслуживание».",
     polState: "Маршрутизация", polDefault: "Остальной трафик", polRules: "Правил", polRoutes: "{n} маршрутов в таблице 210",
@@ -205,6 +217,17 @@ const I18N = {
     manageAll: "All profiles", manage: "Manage", rx: "Received", tx: "Sent", handshake: "Handshake",
     noProfiles: "No profiles yet", noProfilesHint: "Add a .conf or connect your panel's subscription.", addProfile: "Add profile",
     tunnelError: "Could not read the tunnel state: {err}",
+    statusTitle: "System status", level_ok: "Healthy", level_warn: "Attention", level_crit: "Failure", level_info: "No data",
+    sumOk: "All running tunnels are working", sumOkDetail: "{up} of {total} running, each with a fresh handshake.",
+    sumEmpty: "No profiles yet", sumEmptyDetail: "Add a profile and the tunnel state will appear here.",
+    sumNoneUp: "No tunnel is running", sumNoneUpDetail: "Profiles: {total}. Bring up the one you need from the profile list.",
+    sumWait: "No fresh handshake", sumWaitDetail: "Waiting for a handshake: {names}. A handshake counts as fresh for {min} min.",
+    sumErr: "Some profiles have an error", sumErrDetail: "Check: {names}.", sumSubErr: "A subscription failed to update",
+    sumTunnelErr: "Could not read the tunnel state", sumNetErr: "Routing error",
+    sumLost: "No connection to the daemon", sumLostDetail: "No update for {s} s. Retrying every 5 s.",
+    stWaiting: "Waiting for handshake", stError: "Error", rateNow: "now {v}", perSec: "/s",
+    fltLabel: "Filter by state", fltAll: "All", fltLive: "Working", fltWait: "Waiting for handshake", fltStopped: "Stopped", fltBad: "With errors",
+    noMatch: "No profiles match this filter", showAll: "Show all", shownOf: "Showing {n} of {m}", moreActions: "More actions",
     profilesHeading: "Profiles", profilesSub: "AmneziaWG 3.1 configurations and their subscriptions.",
     colName: "Name", colAddress: "Address", colState: "State", colTraffic: "Traffic", colSub: "Subscription", colActions: "Actions",
     subOn: "every {n}", subOff: "manual", subNone: "none", autostart: "Autostart", profileMissing: "Profile not found",
@@ -411,9 +434,18 @@ const S = {
   newMode: "conf",
   newName: "",       // имя нового профиля переживает переключение режима
   authError: "",
+  missed: 0,         // подряд неудачных опросов /api/status
+  okAt: 0,           // когда данные обновлялись в последний раз
+  hist: [],          // выборки трафика для мини-графиков на плитках (только в этой вкладке)
+  pfFilter: "all",   // фильтр списка профилей
 };
 const root = document.getElementById("app");
 let sideEl = null, mainEl = null;
+// Один постоянный регион для озвучивания: его текст меняется только при смене смысла,
+// а не при каждой перерисовке страницы по таймеру.
+const live = h("div", { class: "sr-only", role: "status", "aria-live": "polite" });
+document.body.append(live);
+function announce(text) { if (live.textContent !== text) live.textContent = text; }
 
 function say(kind, text) { S.flash = { kind, text }; }
 
@@ -442,6 +474,14 @@ window.addEventListener("hashchange", () => {
   if (S.auth && S.auth.authenticated) { renderSide(); renderMain(); }
 });
 document.addEventListener("input", (e) => { if (e.target.closest && e.target.closest("#main form")) S.dirty = true; });
+document.addEventListener("click", (e) => {
+  for (const d of document.querySelectorAll(".row-menu[open]")) if (!d.contains(e.target)) d.open = false;
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  const d = document.querySelector(".row-menu[open]");
+  if (d) { d.open = false; const sm = d.querySelector("summary"); if (sm) sm.focus(); }
+});
 
 async function act(fn, ok) {
   if (S.busy) return;
@@ -465,11 +505,14 @@ async function act(fn, ok) {
 async function refresh(quiet) {
   try {
     S.data = await api("GET", "/api/status");
+    S.missed = 0; S.okAt = Date.now(); sample();
   } catch (e) {
     if (e.status === 401) { S.auth = { configured: true, authenticated: false }; render(); return; }
+    S.missed++;
     if (!quiet) say("error", e.message);
   }
-  if (quiet) { renderSide(); if (!S.dirty && !S.busy) renderMain(); } else { renderSide(); renderMain(); }
+  // Открытое меню строки не закрываем перерисовкой по таймеру.
+  if (quiet) { renderSide(); if (!S.dirty && !S.busy && !document.querySelector(".row-menu[open]")) renderMain(); } else { renderSide(); renderMain(); }
 }
 
 async function boot() {
@@ -533,7 +576,7 @@ function renderSide() {
     link("policy", "route", t("navPolicy"), "/policy"),
     h("div", { class: "side-title side-group" }, h("span", {}, t("navProfiles")), h("span", { class: "badge" }, String(list.length))),
     list.map((p) => h("a", { class: "side-inst", href: "#/p/" + encodeURIComponent(p.name), "aria-current": r.page === "profile" && r.name === p.name ? "page" : null, title: p.name },
-      h("span", { class: "dot" + (p.up ? " on" : "") }),
+      sideDot(p),
       h("span", { class: "names" }, h("span", { class: "n" }, p.name), h("span", { class: "a" }, addrOf(p))))),
     h("div", { class: "side-title" }, h("span", {}, t("navSystem"))),
     link("router", "link", t("navRouter"), "/router"),
@@ -573,7 +616,77 @@ function heading(eyebrow, title, sub, actions) {
     h("div", {}, h("div", { class: "eyebrow" }, eyebrow), h("h1", {}, title), sub && h("p", { class: "heading-sub" }, sub)),
     actions && h("div", { class: "actions" }, actions)));
 }
-function pill(p) { return h("span", { class: "pill " + (p.up ? "pill-on" : "pill-off") }, p.up ? t("running") : t("stopped")); }
+/* ---------- состояние туннелей ---------- */
+// Рукопожатие моложе этого срока (с) считаем свежим. WireGuard обновляет сессию примерно раз в 2 минуты
+// при трафике; запас до 3 минут — рабочая граница интерфейса, а не требование протокола.
+const HS_FRESH = 180;
+const hsAge = (p) => { const a = agg(p); return a.hs ? Math.max(0, Math.floor(Date.now() / 1000 - a.hs)) : -1; };
+function liveness(p) {
+  if (!p.up) return "stopped";
+  const age = hsAge(p);
+  return age >= 0 && age <= HS_FRESH ? "live" : "wait";
+}
+const hasProblem = (p) => !!(p.error || (p.subscription && p.subscription.last_error));
+function tunnelState(p) {
+  if (p.error) return { key: "error", cls: "pill-off", label: t("stError") };
+  const k = liveness(p);
+  return k === "live" ? { key: k, cls: "pill-on", label: t("running") }
+    : k === "wait" ? { key: k, cls: "pill-warn", label: t("stWaiting") } : { key: k, cls: "pill-idle", label: t("stopped") };
+}
+function pill(p) { const s = tunnelState(p); return h("span", { class: "pill " + s.cls }, s.label); }
+function sideDot(p) {
+  const s = tunnelState(p);
+  return [h("span", { class: "dot" + ({ live: " on", wait: " warn", error: " crit" }[s.key] || "") }), h("span", { class: "sr-only" }, s.label)];
+}
+function fleet(list) {
+  const c = { all: list.length, live: 0, wait: 0, stopped: 0, bad: 0 };
+  for (const p of list) { c[liveness(p)]++; if (hasProblem(p)) c.bad++; }
+  return c;
+}
+const nameList = (ps) => ps.slice(0, 3).map((p) => p.name).join(", ") + (ps.length > 3 ? " +" + (ps.length - 3) : "");
+
+// Одна фраза о состоянии: уровень, заголовок, пояснение. Порядок — от тяжёлого к лёгкому.
+function summary(list, c) {
+  const d = S.data || {}, net = d.network || {}, up = c.live + c.wait;
+  if (S.missed >= 3) return { level: "crit", icon: "alert", head: t("sumLost"), detail: t("sumLostDetail", { s: Math.max(1, Math.round((Date.now() - S.okAt) / 1000)) }) };
+  if (d.tunnel_error) return { level: "crit", icon: "alert", head: t("sumTunnelErr"), detail: d.tunnel_error };
+  const broken = list.filter((p) => p.error), subErr = list.filter((p) => !p.error && hasProblem(p));
+  if (broken.length) return { level: "crit", icon: "alert", head: t("sumErr"), detail: t("sumErrDetail", { names: nameList(broken) }) };
+  if (net.error) return { level: "crit", icon: "alert", head: t("sumNetErr"), detail: net.error };
+  if (!list.length) return { level: "info", icon: "info", head: t("sumEmpty"), detail: t("sumEmptyDetail") };
+  if (!up) return { level: "warn", icon: "alert", head: t("sumNoneUp"), detail: t("sumNoneUpDetail", { total: list.length }) };
+  if (subErr.length) return { level: "warn", icon: "alert", head: t("sumSubErr"), detail: t("sumErrDetail", { names: nameList(subErr) }) };
+  if (c.wait) return { level: "warn", icon: "alert", head: t("sumWait"), detail: t("sumWaitDetail", { names: nameList(list.filter((p) => liveness(p) === "wait")), min: HS_FRESH / 60 }) };
+  return { level: "ok", icon: "shield", head: t("sumOk"), detail: t("sumOkDetail", { up, total: list.length }) };
+}
+
+// Выборки суммарного трафика: по ним считается скорость для мини-графиков плиток.
+function sample() {
+  let rx = 0, tx = 0;
+  for (const p of profiles()) { const a = agg(p); rx += a.rx; tx += a.tx; }
+  const now = Date.now(), last = S.hist[S.hist.length - 1];
+  if (last && now - last.t < 1500) return; // refresh() зовут и таймер, и действия
+  let drx = 0, dtx = 0;
+  if (last) { // счётчики сбрасываются, когда туннель опускают: отрицательный прирост считаем нулём
+    const dt = (now - last.t) / 1000;
+    drx = rx >= last.rx ? (rx - last.rx) / dt : 0; dtx = tx >= last.tx ? (tx - last.tx) / dt : 0;
+  }
+  S.hist.push({ t: now, rx, tx, drx, dtx });
+  if (S.hist.length > 60) S.hist.shift();
+}
+const SVGNS = "http://www.w3.org/2000/svg";
+function sparkline(vals) {
+  if (!vals || vals.length < 2) return null;
+  const W = 100, H = 40, max = Math.max(...vals, 1), n = vals.length;
+  const line = vals.map((v, i) => (i ? "L" : "M") + ((i / (n - 1)) * W).toFixed(1) + " " + (H - 2 - (v / max) * (H * 0.3)).toFixed(1)).join(" ");
+  const svg = document.createElementNS(SVGNS, "svg");
+  svg.setAttribute("class", "stat-chart"); svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  svg.setAttribute("preserveAspectRatio", "none"); svg.setAttribute("aria-hidden", "true");
+  for (const [cls, d] of [["area", line + " L" + W + " " + H + " L0 " + H + " Z"], ["line", line]]) {
+    const path = document.createElementNS(SVGNS, "path"); path.setAttribute("class", cls); path.setAttribute("d", d); svg.append(path);
+  }
+  return svg;
+}
 function primaryBadge(p) { return p.primary && h("span", { class: "pill pill-warn", title: t("primaryHint") }, t("primary")); }
 const doPrimary = (name) => act(() => api("POST", "/api/profiles/" + encodeURIComponent(name) + "/primary"), t("primaryDone", { name }));
 function primaryBtn(p, small) {
@@ -598,22 +711,42 @@ function deleteBtn(p, small) {
 }
 
 /* ---------- страницы ---------- */
-function statCard(label, value, note) {
-  return h("div", { class: "stat" }, h("div", { class: "stat-label" }, label), h("div", { class: "stat-value" }, value), h("div", { class: "stat-note" }, note));
+function statCard(label, value, note, o) {
+  o = o || {};
+  return h("div", { class: "stat" + (o.tone ? " " + o.tone : ""), "data-level": o.level || null },
+    o.series && sparkline(o.series),
+    h("div", { class: "stat-label" }, label), h("div", { class: "stat-value" }, value), h("div", { class: "stat-note" }, note));
+}
+
+function statusStrip(sum) {
+  const d = S.data || {}, n = d.network || {};
+  return h("section", { class: "status-strip", "data-level": sum.level, "aria-label": t("statusTitle") },
+    h("span", { class: "status-mark" }, icon(sum.icon, 22)),
+    h("div", { class: "status-body" },
+      h("div", { class: "status-head" }, h("span", {}, sum.head), h("span", { class: "status-level" }, t("level_" + sum.level))),
+      h("div", { class: "status-detail" }, sum.detail)),
+    h("div", { class: "status-facts" },
+      d.primary && h("span", { class: "fact" }, t("primary") + ":", h("b", {}, d.primary)),
+      n.gateway && h("span", { class: "fact" }, t("netKill") + ":", h("b", {}, n.kill_switch ? t("netOn") : t("netOff")))));
 }
 
 function pageOverview() {
-  const list = profiles();
-  const up = list.filter((p) => p.up).length;
+  const list = profiles(), c = fleet(list), up = c.live + c.wait;
   let rx = 0, tx = 0, hs = 0;
   for (const p of list) { const a = agg(p); rx += a.rx; tx += a.tx; hs = Math.max(hs, a.hs); }
+  const sum = summary(list, c);
+  announce(t("level_" + sum.level) + ": " + sum.head);
+  const hist = S.hist, rate = (k) => (hist.length > 1 ? t("rateNow", { v: fmtBytes(hist[hist.length - 1][k]) + t("perSec") }) : t("statSumNote"));
+  const hsFresh = hs && Math.floor(Date.now() / 1000 - hs) <= HS_FRESH;
+  const stale = S.missed >= 3; // данные устарели: плитки без цветового уровня, чтобы не показывать «норму» по старым цифрам
   return h("div", {},
     heading(t("console"), t("overviewTitle")),
-    S.data && S.data.tunnel_error && h("div", { class: "flash warn", role: "alert" }, icon("alert", 18), h("div", { class: "msg" }, t("tunnelError", { err: S.data.tunnel_error }))),
+    statusStrip(sum),
     h("div", { class: "grid-stats" },
-      statCard(t("statTunnels"), up + " / " + list.length, t("statTunnelsNote")),
-      statCard(t("statRx"), fmtBytes(rx), t("statSumNote")), statCard(t("statTx"), fmtBytes(tx), t("statSumNote")),
-      statCard(t("statHandshake"), hs ? fmtAgo(hs) : "—", t("statHandshakeNote"))),
+      statCard(t("statTunnels"), up + " / " + list.length, t("statTunnelsNote"), { level: stale ? null : sum.level }),
+      statCard(t("statRx"), fmtBytes(rx), rate("drx"), { tone: "rx", series: hist.slice(1).map((x) => x.drx) }),
+      statCard(t("statTx"), fmtBytes(tx), rate("dtx"), { tone: "tx", series: hist.slice(1).map((x) => x.dtx) }),
+      statCard(t("statHandshake"), hs ? fmtAgo(hs) : "—", t("statHandshakeNote"), { level: up && !stale ? (hsFresh ? "ok" : "warn") : null })),
     h("div", { class: "section-title" }, h("h2", {}, t("profilesTitle")),
       h("a", { href: "#/profiles" }, t("manageAll") + " →")),
     list.length ? h("div", { class: "inst-grid" }, list.map(profileCard)) : emptyState());
@@ -639,24 +772,54 @@ function profileCard(p) {
       h("a", { class: "btn btn-primary btn-small", href: "#/p/" + encodeURIComponent(p.name) }, t("manage")), toggleBtn(p, true)));
 }
 
+// Меню строки: «⋯» открывает второстепенные действия. Удаление требует второго нажатия.
+function rowMenu(p) {
+  const net = (S.data && S.data.network) || {};
+  let armed = false, timer = 0;
+  const delLabel = h("span", {}, t("delete"));
+  const del = h("button", { type: "button", class: "is-danger", disabled: S.busy, onclick: () => {
+    if (!armed) { armed = true; delLabel.textContent = t("confirmDelete"); timer = setTimeout(() => { armed = false; delLabel.textContent = t("delete"); }, 5000); return; }
+    clearTimeout(timer);
+    act(async () => { await api("DELETE", "/api/profiles/" + encodeURIComponent(p.name)); go("/profiles"); }, t("deleted", { name: p.name }));
+  } }, icon("trash", 16), delLabel);
+  const canPrimary = p.up && !p.primary && net.gateway && net.lan_iface;
+  return h("details", { class: "row-menu" },
+    h("summary", { class: "icon-btn", title: t("moreActions"), "aria-label": t("moreActions") + ": " + p.name }, icon("more", 18)),
+    h("div", { class: "row-menu-list" },
+      h("a", { href: "#/p/" + encodeURIComponent(p.name) }, icon("settings", 16), t("manage")),
+      canPrimary && h("button", { type: "button", disabled: S.busy, onclick: () => doPrimary(p.name) }, icon("star", 16), t("makePrimary")),
+      del));
+}
+
 function pageProfiles() {
-  const list = profiles();
+  const list = profiles(), c = fleet(list), flt = S.pfFilter;
+  const tests = { all: () => true, live: (p) => liveness(p) === "live", wait: (p) => liveness(p) === "wait", stopped: (p) => !p.up, bad: hasProblem };
+  const shown = list.filter(tests[flt] || tests.all);
+  const chip = (key, n) => h("button", { class: "filter-chip", type: "button", "aria-pressed": String(flt === key),
+    onclick: () => { S.pfFilter = key; renderMain(); announce(t("shownOf", { n: list.filter(tests[key]).length, m: list.length }) + (key === "all" ? "" : " · " + t("flt" + key[0].toUpperCase() + key.slice(1)))); } },
+    t("flt" + key[0].toUpperCase() + key.slice(1)), h("b", {}, String(n)));
+  const cols = ["colName", "colAddress", "colState", "colTraffic", "colSub", "colActions"];
   return h("div", {},
     heading(t("navProfiles"), t("profilesHeading"), t("profilesSub"),
       h("a", { class: "btn btn-primary", href: "#/new" }, icon("plus", 16), t("addProfile"))),
-    !list.length ? emptyState() : h("div", { class: "table-scroll" }, h("table", {},
-      h("thead", {}, h("tr", {}, ["colName", "colAddress", "colState", "colTraffic", "colSub", "colActions"].map((k) => h("th", { scope: "col" }, t(k))))),
-      h("tbody", {}, list.map((p) => {
-        const a = agg(p), sub = p.subscription;
-        return h("tr", {},
-          h("td", {}, h("a", { class: "name", href: "#/p/" + encodeURIComponent(p.name) }, icon("server", 18), p.name)),
-          h("td", {}, h("span", { class: "ip-pill" }, addrOf(p))),
-          h("td", {}, h("div", { class: "actions" }, pill(p), primaryBadge(p)), h("div", { class: "sub" }, t("handshake") + ": " + (a.hs ? fmtAgo(a.hs) : t("never")))),
-          h("td", { class: "mono" }, "↓ " + fmtBytes(a.rx), h("br"), "↑ " + fmtBytes(a.tx)),
-          h("td", {}, sub ? fmtInterval(sub.interval_min) : t("subNone"),
-            sub && sub.last_error && h("div", { class: "sub" }, h("span", { class: "pill pill-off" }, t("subLastError")))),
-          h("td", {}, h("div", { class: "actions" }, toggleBtn(p, true), deleteBtn(p, true))));
-      })))));
+    !list.length ? emptyState() : [
+      h("div", { class: "filter-chips", role: "group", "aria-label": t("fltLabel") },
+        chip("all", c.all), chip("live", c.live), chip("wait", c.wait), chip("stopped", c.stopped), chip("bad", c.bad)),
+      !shown.length ? h("div", { class: "card empty" }, icon("server", 32), h("strong", {}, t("noMatch")),
+        h("button", { class: "btn btn-secondary", type: "button", onclick: () => { S.pfFilter = "all"; renderMain(); } }, t("showAll")))
+        : h("div", { class: "table-scroll has-menu" }, h("table", {},
+          h("thead", {}, h("tr", {}, cols.map((k) => h("th", { scope: "col" }, t(k))))),
+          h("tbody", {}, shown.map((p) => {
+            const a = agg(p), sub = p.subscription;
+            return h("tr", {},
+              h("td", {}, h("a", { class: "name", href: "#/p/" + encodeURIComponent(p.name) }, icon("server", 18), p.name)),
+              h("td", { "data-label": t("colAddress") }, h("span", { class: "ip-pill" }, addrOf(p))),
+              h("td", { "data-label": t("colState") }, h("div", {}, h("div", { class: "actions" }, pill(p), primaryBadge(p)), h("div", { class: "sub" }, t("handshake") + ": " + (a.hs ? fmtAgo(a.hs) : t("never"))))),
+              h("td", { class: "mono", "data-label": t("colTraffic") }, h("span", {}, "↓ " + fmtBytes(a.rx), h("br"), "↑ " + fmtBytes(a.tx))),
+              h("td", { "data-label": t("colSub") }, h("span", {}, sub ? fmtInterval(sub.interval_min) : t("subNone"),
+                sub && sub.last_error && h("div", { class: "sub" }, h("span", { class: "pill pill-off" }, t("subLastError"))))),
+              h("td", {}, h("div", { class: "row-actions" }, toggleBtn(p, true), rowMenu(p))));
+          }))))]);
 }
 
 function pageProfile(r) {
