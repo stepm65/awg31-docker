@@ -92,16 +92,54 @@ func (s *Server) handlePutPolicy(w http.ResponseWriter, r *http.Request, _ strin
 		writeErr(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	// Включили правила с geosite/geoip, а баз ещё нет (свежий контейнер) —
+	// скачиваем сразу, не дожидаясь фонового обновления.
+	var fetchErr error
+	if p.Enabled {
+		fetchErr = s.fetchMissingGeo(r, p)
+	}
 	var reloadErr error
 	if s.cfg.Policy != nil {
 		reloadErr = s.cfg.Policy.Reload()
 	}
 	v := s.policyView()
-	if reloadErr != nil {
+	switch {
+	case fetchErr != nil:
+		v.Errors = append(v.Errors, "не удалось скачать базы geo: "+fetchErr.Error()+" — проверьте доступ контейнера в интернет и повторите кнопкой «Обновить базы»")
+	case reloadErr != nil:
 		v.Errors = append(v.Errors, "базы geo: "+reloadErr.Error())
 	}
 	s.cfg.Logf("policy: %s, default %s, rules %d", map[bool]string{true: "enabled", false: "disabled"}[p.Enabled], p.DefaultAction, v.Stats.Rules)
 	writeJSON(w, http.StatusOK, v)
+}
+
+// fetchMissingGeo скачивает те базы geo, которые нужны правилам, но ещё не лежат
+// на диске. Уже имеющиеся файлы не трогает (их обновляет geoUpdater и кнопка).
+func (s *Server) fetchMissingGeo(r *http.Request, p store.Policy) error {
+	if s.cfg.Geo == nil {
+		return nil
+	}
+	rules, _ := policy.Parse(p.Rules)
+	sites, ips := policy.Categories(rules)
+	gs := s.cfg.Geo.Status()
+	siteURL, ipURL := "", ""
+	if len(sites) > 0 && !gs.Site.Present {
+		siteURL = p.GeoSiteURL
+	}
+	if len(ips) > 0 && !gs.IP.Present {
+		ipURL = p.GeoIPURL
+	}
+	if siteURL == "" && ipURL == "" {
+		return nil
+	}
+	ctx, cancel := timeout(r, 3*time.Minute)
+	defer cancel()
+	if err := s.cfg.Geo.Download(ctx, siteURL, ipURL, s.cfg.AllowHTTPSubs); err != nil {
+		s.cfg.Logf("geo databases: %v", err)
+		return err
+	}
+	s.cfg.Logf("geo databases downloaded")
+	return nil
 }
 
 func (s *Server) handleTestPolicy(w http.ResponseWriter, r *http.Request, _ string) {

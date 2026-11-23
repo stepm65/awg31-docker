@@ -105,6 +105,59 @@ func TestGeoUpdate(t *testing.T) {
 	}
 }
 
+// Включение правил с geosite на свежем контейнере сразу скачивает недостающие
+// базы, без ошибки «no such file or directory».
+func TestPolicySaveFetchesMissingGeo(t *testing.T) {
+	hits := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		_, _ = w.Write([]byte("youtube.com\n"))
+	}))
+	defer srv.Close()
+	e := policyEnv(t, true)
+	e.setup()
+	p := store.DefaultPolicy()
+	p.Enabled, p.Rules, p.GeoSiteURL, p.GeoIPURL = true, "PROXY geosite:youtube\n", srv.URL+"/geosite.dat", srv.URL+"/geoip.dat"
+	code, m, raw := e.do("PUT", "/api/policy", p, nil)
+	if code != 200 {
+		t.Fatalf("%d %s", code, raw)
+	}
+	if errs, _ := m["errors"].([]any); len(errs) != 0 {
+		t.Fatalf("ошибок быть не должно: %v", errs)
+	}
+	if hits != 1 {
+		t.Fatalf("качается только geosite (geoip правилам не нужна): %d запросов", hits)
+	}
+	g := m["geo"].(map[string]any)
+	if g["geosite"].(map[string]any)["present"] != true || g["site_loaded"].(map[string]any)["youtube"].(float64) != 1 {
+		t.Fatalf("база скачана и загружена: %v", g)
+	}
+	// повторное сохранение уже имеющиеся базы не качает
+	if code, _, raw = e.do("PUT", "/api/policy", p, nil); code != 200 || hits != 1 {
+		t.Fatalf("повторное сохранение: %d %s, запросов %d", code, raw, hits)
+	}
+}
+
+// Если скачать не удалось, правила всё равно сохранены, а ошибка понятная.
+func TestPolicySaveGeoDownloadFails(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "нет", http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+	e := policyEnv(t, true)
+	e.setup()
+	p := store.DefaultPolicy()
+	p.Enabled, p.Rules, p.GeoSiteURL = true, "PROXY geosite:youtube\n", srv.URL+"/geosite.dat"
+	code, m, raw := e.do("PUT", "/api/policy", p, nil)
+	if code != 200 {
+		t.Fatalf("правила сохраняются и при сбое загрузки: %d %s", code, raw)
+	}
+	errs, _ := m["errors"].([]any)
+	if len(errs) != 1 || !strings.Contains(errs[0].(string), "не удалось скачать базы geo") {
+		t.Fatalf("ожидалась ошибка загрузки: %v", errs)
+	}
+}
+
 func TestGeoCategoriesSearch(t *testing.T) {
 	e := policyEnv(t, true)
 	if code, _, _ := e.do("GET", "/api/geo/categories?kind=geosite&q=you", nil, nil); code != http.StatusUnauthorized {
