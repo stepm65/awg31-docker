@@ -48,7 +48,13 @@
 :if ([:len $disk] > 0) do={ :set base ($disk . "/awg31") }
 :local datapath ($base . "/data")
 :if ([:len $datadir] > 0) do={ :set datapath $datadir }
-:if (([:len $disk] > 0) && ([:len [/file/find name=$disk]] = 0)) do={ :error ("disk " . $disk . " not found in /file (see /disk/print)") }
+# Диск ищем в /disk, а не в /file: одноимённый обычный каталог (например usb1, оставшийся от неудачного
+# запуска) диском не является, и контейнер в нём создать нельзя.
+:if ([:len $disk] > 0) do={
+  :local diskOk false
+  :do { :if ([:len [/disk/find where slot=$disk]] > 0) do={ :set diskOk true } } on-error={ :set diskOk ([:len [/file/find name=$disk]] > 0) }
+  :if (!$diskOk) do={ :error ("disk " . $disk . " not found (see /disk/print). Edit :local disk at the top of this file: usb1 is only an example; a RAM disk is /disk/add type=tmpfs tmpfs-max-size=100M, then :local disk \"tmp1\"") }
+}
 :if ([:len $disk] = 0) do={
   :local free [/system/resource/get free-hdd-space]
   :put ("internal flash, free MiB: " . ($free / 1048576))
