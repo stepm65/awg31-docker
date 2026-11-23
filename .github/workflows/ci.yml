@@ -125,5 +125,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes "Образы для MikroTik: см. docs/MIKROTIK.md"
+          # Название релиза — только версия, описание пустое. Если релиз уже есть (повторный запуск
+          # на том же теге), текст в нём тоже очищается.
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes ""
+          else
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes ""
+          fi
           gh release upload "$GITHUB_REF_NAME" dist/*.tar dist/SHA256SUMS routeros/*.rsc routeros/app.yaml --clobber
