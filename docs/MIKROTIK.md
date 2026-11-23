@@ -40,8 +40,20 @@ awg31 работает контейнером на роутерах MikroTik с 
 Контейнер получает адрес `192.168.253.2/30`, роутер — `192.168.253.1`. Веб-консоль: `https://192.168.253.2:8443` (только из LAN). Токен первичной настройки:
 
 ```
-/log/print where message~"токен"
+/log/print where topics~"container"
 ```
+
+В журнале это длинная hex-строка рядом с текстом про WebUI. Начиная с версии 0.7.1 перед ней стоит метка `SETUP TOKEN`: `/log/print where message~"SETUP TOKEN"`. Терминалы RouterOS (SSH, serial) часто не выводят кириллицу, поэтому текст вокруг токена может отображаться пробелами: сам токен читается.
+
+### Нет интернета у контейнера (подписка не обновляется)
+
+Контейнер ходит наружу через роутер, и этому могут мешать три вещи (`router-setup.rsc` настраивает первые две):
+
+- нет `srcnat` (masquerade) для адреса контейнера: `/ip/firewall/nat/add chain=srcnat action=masquerade src-address=192.168.253.2 out-interface-list=WAN comment="awg31_nat"`;
+- стандартный firewall режет ICMP к роутеру и forward с veth (он не из `LAN`): правила `awg31_icmp` (input) и `awg31_out` (forward из veth в `WAN`);
+- veth контейнера добавлен в список `WAN`: тогда forward с него режет правило «drop all from WAN not DSTNATed». Из списка его нужно убрать: `/interface/list/member/remove [find list=WAN interface=veth-awg31]`.
+
+Проверка: `/container/shell awg31`, затем `ping -c2 1.1.1.1` и `nslookup <хост панели> 1.1.1.1`.
 
 ## Маршрутизация
 
