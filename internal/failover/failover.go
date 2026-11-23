@@ -207,7 +207,7 @@ func (m *Monitor) Check(ctx context.Context) Status {
 	cfg := st.FailoverSettings()
 	profiles, err := m.Store.ListProfiles()
 	if err != nil {
-		m.logf("резервирование: список профилей: %v", err)
+		m.logf("failover: profile list: %v", err)
 		return m.Status()
 	}
 	order := Order(st.Priority, profiles)
@@ -228,7 +228,7 @@ func (m *Monitor) Check(ctx context.Context) Status {
 
 	ifaces, err := m.Tunnels.Status(ctx)
 	if err != nil {
-		m.logf("резервирование: статус туннелей: %v", err)
+		m.logf("failover: tunnel status: %v", err)
 		return m.Status()
 	}
 	up := map[string]tunnel.Iface{}
@@ -434,7 +434,7 @@ func (m *Monitor) standby(ctx context.Context, cfg store.Failover, order []strin
 		m.switchTo(ctx, primary, target, reason, now)
 	case need:
 		if primary != "" {
-			m.logf("резервирование: %s неисправен, но исправной замены нет", primary)
+			m.logf("failover: %s is unhealthy but there is no healthy replacement", primary)
 		}
 	case cfg.Failback && target != "" && rankOf(order, target) < rankOf(order, primary):
 		m.mu.Lock()
@@ -492,7 +492,7 @@ func (m *Monitor) switchMode(ctx context.Context, order []string, health map[str
 		m.switchTo(ctx, primary, name, reason, now)
 		return
 	}
-	m.logf("резервирование: %s — исправной замены нет", reason)
+	m.logf("failover: %s: no healthy replacement", reason)
 }
 
 func (m *Monitor) keep(name string) bool { return m.Keep != nil && m.Keep(name) }
@@ -511,7 +511,7 @@ func (m *Monitor) up(ctx context.Context, name string) error {
 
 func (m *Monitor) switchTo(ctx context.Context, from, to, reason string, now time.Time) {
 	if err := m.Tunnels.SetPrimary(ctx, to); err != nil {
-		m.logf("резервирование: переключение на %s не удалось: %v", to, err)
+		m.logf("failover: switching to %s failed: %v", to, err)
 		return
 	}
 	_ = m.Store.Update(func(s *store.State) error { s.Primary = to; return nil })
@@ -519,7 +519,7 @@ func (m *Monitor) switchTo(ctx context.Context, from, to, reason string, now tim
 	m.status.LastSwitch, m.status.LastSwitchReason = now, reason
 	m.status.Switches++
 	m.mu.Unlock()
-	m.logf("резервирование: основной туннель %s -> %s (%s)", orDashS(from), to, reason)
+	m.logf("failover: primary tunnel %s -> %s (%s)", orDashS(from), to, reason)
 	if m.OnSwitch != nil {
 		m.OnSwitch(from, to, reason)
 	}

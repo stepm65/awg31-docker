@@ -137,7 +137,7 @@ func (s *Service) Sync(ctx context.Context, name string) (changed bool, err erro
 	reopened := false
 	var se *subfetch.StatusError
 	if err != nil && !errors.As(err, &se) && ctx.Err() == nil && cur != "" && s.brokenTunnel(ctx, name) {
-		s.logf("подписка %s: туннель не отвечает, запрашиваю конфиг в обход него", name)
+		s.logf("subscription %s: the tunnel does not respond, fetching the config around it", name)
 		if derr := s.Tunnels.Down(ctx, name); derr == nil {
 			reopened = true
 			body, etag, notModified, err = subfetch.Fetch(ctx, fetchOpts, sub.ETag)
@@ -203,7 +203,7 @@ func (s *Service) Sync(ctx context.Context, name string) (changed bool, err erro
 					msg = fmt.Errorf("%w; возвращён прежний конфиг", msg)
 				}
 			}
-			s.logf("подписка %s: %v", name, msg)
+			s.logf("subscription %s: %v", name, msg)
 			record("", "", msg)
 			return false, msg
 		}
@@ -254,9 +254,9 @@ func (s *Service) syncDue(ctx context.Context) {
 		cancel()
 		switch {
 		case err != nil:
-			s.logf("подписка %s: ошибка: %v", name, err)
+			s.logf("subscription %s: error: %v", name, err)
 		case changed:
-			s.logf("подписка %s: профиль обновлён", name)
+			s.logf("subscription %s: profile updated", name)
 		}
 	}
 }

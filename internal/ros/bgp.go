@@ -163,7 +163,7 @@ func (s *Speaker) run(ctx context.Context, cfg BGPConfig, done chan struct{}) {
 			return
 		}
 		s.setStatus(func(st *BGPStatus) { st.State, st.LastError, st.Announced = "error", err.Error(), 0 })
-		s.logf("BGP: %v, повтор через %s", err, backoff)
+		s.logf("BGP: %v, retry in %s", err, backoff)
 		select {
 		case <-ctx.Done():
 			return
@@ -307,7 +307,7 @@ func (s *Speaker) session(ctx context.Context, cfg BGPConfig) error {
 				if !established {
 					established = true
 					s.setStatus(func(st *BGPStatus) { st.State, st.Since, st.LastError = "established", time.Now(), "" })
-					s.logf("BGP: сессия с %s установлена (AS %d)", cfg.Peer, peer.AS)
+					s.logf("BGP: session with %s established (AS %d)", cfg.Peer, peer.AS)
 					if err := push(); err != nil {
 						return err
 					}

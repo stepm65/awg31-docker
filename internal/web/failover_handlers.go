@@ -76,7 +76,7 @@ func (s *Server) handlePutFailover(w http.ResponseWriter, r *http.Request, _ str
 	if s.cfg.Failover != nil {
 		s.cfg.Failover.Wake()
 	}
-	s.cfg.Logf("резервирование: режим %s, признак %s, приоритет %v", settings.Mode, settings.Trigger, prio)
+	s.cfg.Logf("failover: mode %s, trigger %s, priority %v", settings.Mode, settings.Trigger, prio)
 	writeJSON(w, http.StatusOK, s.failoverView())
 }
 
@@ -112,6 +112,6 @@ func (s *Server) handlePrimary(w http.ResponseWriter, r *http.Request, _ string)
 		return
 	}
 	_ = s.cfg.Store.Update(func(st *store.State) error { st.Primary = name; return nil })
-	s.cfg.Logf("основной туннель: %s (вручную)", name)
+	s.cfg.Logf("primary tunnel: %s (manual)", name)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

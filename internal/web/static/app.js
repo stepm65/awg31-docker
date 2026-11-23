@@ -1219,7 +1219,9 @@ function pageRouter() {
 function authView(mode) {
   const setup = mode === "setup";
   const token = h("input", { id: "au-token", type: "text", autocomplete: "off", spellcheck: "false", class: "mono" });
-  const user = h("input", { id: "au-user", type: "text", autocomplete: "username", value: "admin" });
+  // При входе поле пустое: логин задан при первичной настройке и может быть любым. "admin" подставляется
+  // только при создании администратора.
+  const user = h("input", { id: "au-user", type: "text", autocomplete: "username", value: setup ? "admin" : "" });
   const pw = h("input", { id: "au-pw", type: "password", autocomplete: setup ? "new-password" : "current-password" });
   const rep = h("input", { id: "au-rep", type: "password", autocomplete: "new-password" });
   const err = h("div", { class: "flash error", role: "alert", hidden: true });

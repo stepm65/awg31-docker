@@ -130,7 +130,7 @@ func (s *Server) handlePutGroups(w http.ResponseWriter, r *http.Request, _ strin
 	if s.cfg.Policy != nil {
 		s.cfg.Policy.MarkDirty()
 	}
-	s.cfg.Logf("группы туннелей: %d", len(groups))
+	s.cfg.Logf("tunnel groups: %d", len(groups))
 	v := s.groupsView()
 	writeJSON(w, http.StatusOK, map[string]any{"view": v, "warnings": warnings})
 }
@@ -175,7 +175,7 @@ func (s *Server) handleGroupPrimary(w http.ResponseWriter, r *http.Request, _ st
 		return
 	}
 	_ = s.cfg.Store.Update(func(st *store.State) error { st.Primary = name; return nil })
-	s.cfg.Logf("основной: группа %s (вручную)", name)
+	s.cfg.Logf("primary: group %s (manual)", name)
 	if s.cfg.Failover != nil {
 		s.cfg.Failover.Wake()
 	}

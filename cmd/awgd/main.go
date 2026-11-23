@@ -36,15 +36,17 @@ import (
 )
 
 func main() {
+	// Журнал контейнера RouterOS и терминалы не показывают UTF-8: см. asciiWriter.
+	log.SetOutput(asciiWriter{os.Stderr})
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
 		if err := healthcheck(); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(asciiWriter{os.Stderr}, err)
 			os.Exit(1)
 		}
 		return
 	}
 	if err := run(); err != nil {
-		log.Printf("ОШИБКА: %v", err)
+		log.Printf("ERROR: %v", err)
 		os.Exit(1)
 	}
 }
@@ -133,7 +135,7 @@ func adminPassword() (string, error) {
 }
 
 func run() error {
-	logf := log.New(os.Stdout, "", log.LstdFlags).Printf
+	logf := log.New(asciiWriter{os.Stdout}, "", log.LstdFlags).Printf
 	logf("awg31 %s", version.Version)
 
 	dataDir := env("DATA_DIR", "/data")
@@ -160,7 +162,7 @@ func run() error {
 			if err := st.Update(func(s *store.State) error { s.User, s.PassHash = user, hash; return nil }); err != nil {
 				return err
 			}
-			logf("пароль администратора %q задан из переменной окружения; в дальнейшем он меняется только через WebUI", user)
+			logf("administrator password for %q is set from the environment; change it only through the WebUI from now on", user)
 		}
 	}
 
@@ -171,11 +173,11 @@ func run() error {
 	}
 	tm := tunnel.New(runner, topts)
 	if err := tm.EnsureRouting(context.Background()); err != nil {
-		logf("ВНИМАНИЕ: %v", err)
+		logf("WARNING: %v", err)
 	}
 	subs := &subsync.Service{Store: st, Tunnels: tm, AllowHTTP: envBool("ALLOW_INSECURE_SUBSCRIPTIONS", false), Logf: logf}
 	if subs.AllowHTTP {
-		logf("ВНИМАНИЕ: ALLOW_INSECURE_SUBSCRIPTIONS=on — подписки по открытому HTTP разрешены")
+		logf("WARNING: ALLOW_INSECURE_SUBSCRIPTIONS=on: subscriptions over plain HTTP are allowed")
 	}
 
 	proxies, err := parsePrefixes(env("TRUSTED_PROXIES", ""))
@@ -188,9 +190,9 @@ func run() error {
 		if setupToken, err = auth.NewToken(); err != nil {
 			return err
 		}
-		logf("================ ПЕРВИЧНАЯ НАСТРОЙКА ================")
-		logf("Откройте WebUI и введите токен настройки (SETUP TOKEN): %s", setupToken)
-		logf("Токен одноразовый и действует до перезапуска контейнера.")
+		logf("================ FIRST-TIME SETUP ================")
+		logf("Open the WebUI and enter the setup token (SETUP TOKEN): %s", setupToken)
+		logf("The token is single-use and valid until the container restarts.")
 		logf("=====================================================")
 	}
 
@@ -213,7 +215,7 @@ func run() error {
 	geoStore := &geo.Store{Dir: filepath.Join(dataDir, "geo")}
 	pol := &policy.Engine{Store: st, Geo: geoStore, Tunnels: router, Runner: runner, Dir: topts.RunDir, Logf: logf}
 	if err := pol.Reload(); err != nil {
-		logf("политика: базы geo: %v", err)
+		logf("policy: geo databases: %v", err)
 	}
 	tm.OnChange(pol.Invalidate) // PROXY@туннель зависит от того, какие туннели подняты, а ядро убирает маршруты исчезнувшего интерфейса
 	tm.OnChange(grp.TunnelsChanged)
@@ -261,14 +263,14 @@ func run() error {
 			return fmt.Errorf("сертификат WebUI: %w", err)
 		}
 		httpSrv.TLSConfig = tlsutil.ServerConfig(cert)
-		logf("WebUI по HTTPS: %s", tlsutil.Describe(fp))
+		logf("WebUI over HTTPS: %s", tlsutil.Describe(fp))
 	case "files":
 		certFile, keyFile = env("UI_TLS_CERT", ""), env("UI_TLS_KEY", "")
 		if certFile == "" || keyFile == "" {
 			return errors.New("UI_TLS=files требует UI_TLS_CERT и UI_TLS_KEY")
 		}
 	case "off":
-		logf("ВНИМАНИЕ: UI_TLS=off — пароль и cookie передаются открытым текстом; допустимо только за доверенным TLS-прокси")
+		logf("WARNING: UI_TLS=off: password and cookie travel in clear text; acceptable only behind a trusted TLS proxy")
 	default:
 		return fmt.Errorf("UI_TLS: неизвестный режим %q (auto|files|off)", tlsMode)
 	}
@@ -278,7 +280,7 @@ func run() error {
 
 	errCh := make(chan error, 2)
 	go func() {
-		logf("WebUI слушает %s (TLS: %s)", httpSrv.Addr, tlsMode)
+		logf("WebUI listening on %s (TLS: %s)", httpSrv.Addr, tlsMode)
 		var err error
 		if tlsMode == "off" {
 			err = httpSrv.ListenAndServe()
@@ -300,7 +302,7 @@ func run() error {
 			WriteTimeout:      10 * time.Second,
 		}
 		go func() {
-			logf("проба здоровья слушает %s (только код ответа, без тела)", addr)
+			logf("health probe listening on %s (status code only, no body)", addr)
 			if err := healthSrv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 				errCh <- err
 			}
@@ -313,9 +315,9 @@ func run() error {
 	go geoUpdater(ctx, st, geoStore, pol, logf)
 	if dnsSrv != nil {
 		go func() {
-			logf("DNS-форвардер: %s (UDP/TCP)", dnsSrv.Listen)
+			logf("DNS forwarder: %s (UDP/TCP)", dnsSrv.Listen)
 			if err := dnsSrv.ListenAndServe(ctx); err != nil {
-				logf("DNS-форвардер не запущен: %v (нужно право NET_BIND_SERVICE для порта 53 или DNS_LISTEN с портом выше 1024)", err)
+				logf("DNS forwarder not started: %v (needs NET_BIND_SERVICE for port 53, or DNS_LISTEN with a port above 1024)", err)
 			}
 		}()
 	}
@@ -326,10 +328,10 @@ func run() error {
 
 	select {
 	case <-ctx.Done():
-		logf("получен сигнал завершения")
+		logf("shutdown signal received")
 	case err := <-errCh:
 		stop()
-		logf("ошибка сервера: %v", err)
+		logf("server error: %v", err)
 		shutdown(httpSrv, healthSrv, st, tm, logf)
 		return err
 	}
@@ -355,21 +357,21 @@ func autostart(ctx context.Context, st *store.Store, tm *tunnel.Manager, logf fu
 		}
 		text, err := st.ReadProfile(name)
 		if err != nil {
-			logf("автозапуск %s: %v", name, err)
+			logf("autostart %s: %v", name, err)
 			continue
 		}
 		cctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 		err = tm.Up(cctx, name, text)
 		cancel()
 		if err != nil && !errors.Is(err, tunnel.ErrAlreadyUp) {
-			logf("автозапуск %s: %v", name, err)
+			logf("autostart %s: %v", name, err)
 			continue
 		}
-		logf("автозапуск: туннель %s поднят", name)
+		logf("autostart: tunnel %s is up", name)
 	}
 	if p := snap.Primary; p != "" && tm.Primary() != p && (tm.Table(p) != 0 || snap.HasGroup(p)) {
 		if err := tm.SetPrimary(ctx, p); err != nil {
-			logf("автозапуск: основной туннель %s: %v", p, err)
+			logf("autostart: primary tunnel %s: %v", p, err)
 		}
 	}
 }
@@ -413,10 +415,10 @@ func shutdown(web, health *http.Server, st *store.Store, tm *tunnel.Manager, log
 	for _, i := range ifaces {
 		name := i.Name
 		if err := tm.Down(ctx, name); err != nil && !errors.Is(err, tunnel.ErrNotUp) {
-			logf("остановка %s: %v", name, err)
+			logf("stopping %s: %v", name, err)
 		}
 	}
-	logf("остановлено")
+	logf("stopped")
 }
 
 // networkOptions собирает настройки режима шлюза из окружения:
@@ -431,13 +433,13 @@ func networkOptions(ctx context.Context, r tunnel.Runner, logf func(string, ...a
 		Logf:      logf,
 	}
 	if !o.AutoRoute {
-		logf("режим шлюза выключен (AWG_AUTO_ROUTE=off): маршруты как у обычного awg-quick")
+		logf("gateway mode is off (AWG_AUTO_ROUTE=off): routes as in plain awg-quick")
 		return o, nil
 	}
 	o.KillSwitch = envBool("AWG_KILLSWITCH", true)
 	if envBool("AWG_ENABLE_IPV6", true) {
 		if o.IPv6 = tunnel.IPv6Available(); !o.IPv6 {
-			logf("IPv6 в контейнере недоступен (disable_ipv6=1): туннель работает только по IPv4")
+			logf("IPv6 is unavailable in the container (disable_ipv6=1): the tunnel works over IPv4 only")
 		}
 	}
 	if v := env("AWG_LAN_IFACE", ""); v != "" {
@@ -448,9 +450,9 @@ func networkOptions(ctx context.Context, r tunnel.Runner, logf func(string, ...a
 	} else if v, err := tunnel.DetectLanIface(ctx, r); err == nil {
 		o.LanIface = v
 	} else {
-		logf("LAN-интерфейс не найден (%v): только NAT и MSS-clamp, без маршрутизации трафика LAN и kill switch", err)
+		logf("LAN interface not found (%v): NAT and MSS clamp only, no LAN routing and no kill switch", err)
 	}
-	logf("режим шлюза: LAN=%s, kill switch=%v, IPv6=%v, таблица %d", orDash(o.LanIface), o.KillSwitch, o.IPv6, tunnel.RouteTable)
+	logf("gateway mode: LAN=%s, kill switch=%v, IPv6=%v, table %d", orDash(o.LanIface), o.KillSwitch, o.IPv6, tunnel.RouteTable)
 	return o, nil
 }
 
@@ -495,12 +497,12 @@ func geoUpdater(ctx context.Context, st *store.Store, g *geo.Store, pol *policy.
 		dctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 		defer cancel()
 		if err := g.Download(dctx, siteURL, ipURL, false); err != nil {
-			logf("базы geo: %v", err)
+			logf("geo databases: %v", err)
 			return
 		}
-		logf("базы geo обновлены")
+		logf("geo databases updated")
 		if err := pol.Reload(); err != nil {
-			logf("политика: базы geo: %v", err)
+			logf("policy: geo databases: %v", err)
 		}
 	}
 	timer := time.NewTimer(30 * time.Second)

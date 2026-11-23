@@ -256,7 +256,7 @@ func (m *Manager) RefreshPrimary(ctx context.Context) {
 	}
 	if next != "" {
 		if err := m.setPrimaryLocked(ctx, next); err != nil {
-			m.logf("переход на туннель %s не удался: %v", next, err)
+			m.logf("switching to tunnel %s failed: %v", next, err)
 		}
 	} else if !m.opts.KillSwitch {
 		m.lanRuleLocked(ctx, false)
@@ -286,7 +286,7 @@ func (m *Manager) applyGroupPrimaryLocked(ctx context.Context) {
 		args = append(args, "table", tbl)
 		if _, err := m.r.Run(ctx, "ip", args...); err != nil {
 			if fam == "-4" {
-				m.logf("основная группа %s: %v", m.primary, err)
+				m.logf("primary group %s: %v", m.primary, err)
 			}
 			continue
 		}

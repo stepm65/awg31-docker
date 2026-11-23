@@ -63,7 +63,7 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 	}
 	if !auth.TokenEqual(body.SetupToken, s.setupToken) {
 		s.cfg.Limiter.Fail(ip)
-		s.cfg.Logf("первичная настройка: неверный токен, ip=%s", ip)
+		s.cfg.Logf("first-time setup: wrong token, ip=%s", ip)
 		writeErr(w, http.StatusForbidden, "неверный токен первичной настройки (он выведен в журнале контейнера)")
 		return
 	}
@@ -100,7 +100,7 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "не удалось создать сессию")
 		return
 	}
-	s.cfg.Logf("первичная настройка выполнена, администратор %q", body.User)
+	s.cfg.Logf("first-time setup done, administrator %q", body.User)
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "user": body.User})
 }
 
@@ -138,7 +138,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	passOK := auth.VerifyPassword(st.PassHash, body.Password)
 	if !userOK || !passOK {
 		blocked, wait := s.cfg.Limiter.Fail(ip)
-		s.cfg.Logf("неудачный вход, ip=%s", ip)
+		s.cfg.Logf("failed login, ip=%s", ip)
 		if blocked {
 			writeErr(w, http.StatusTooManyRequests, fmt.Sprintf("неверный логин или пароль; адрес заблокирован на %d с", int(wait/time.Second)))
 			return
@@ -196,6 +196,6 @@ func (s *Server) handlePassword(w http.ResponseWriter, r *http.Request, user str
 	s.cfg.Limiter.Reset(ip)
 	s.cfg.Sessions.RevokeAll() // старые сессии (в том числе украденные) перестают действовать
 	_ = s.setSession(w, user)
-	s.cfg.Logf("пароль администратора изменён, ip=%s", ip)
+	s.cfg.Logf("administrator password changed, ip=%s", ip)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

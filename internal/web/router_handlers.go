@@ -66,7 +66,7 @@ func (s *Server) handlePutRouter(w http.ResponseWriter, r *http.Request, _ strin
 	if s.cfg.Router != nil {
 		s.cfg.Router.Wake()
 	}
-	s.cfg.Logf("RouterOS: режим %s, адрес %s", in.Mode, in.URL)
+	s.cfg.Logf("RouterOS: mode %s, address %s", in.Mode, in.URL)
 	writeJSON(w, http.StatusOK, s.routerView())
 }
 

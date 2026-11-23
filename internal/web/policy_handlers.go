@@ -99,7 +99,7 @@ func (s *Server) handlePutPolicy(w http.ResponseWriter, r *http.Request, _ strin
 	if reloadErr != nil {
 		v.Errors = append(v.Errors, "базы geo: "+reloadErr.Error())
 	}
-	s.cfg.Logf("политика: %s, по умолчанию %s, правил %d", map[bool]string{true: "включена", false: "выключена"}[p.Enabled], p.DefaultAction, v.Stats.Rules)
+	s.cfg.Logf("policy: %s, default %s, rules %d", map[bool]string{true: "enabled", false: "disabled"}[p.Enabled], p.DefaultAction, v.Stats.Rules)
 	writeJSON(w, http.StatusOK, v)
 }
 
@@ -127,7 +127,7 @@ func (s *Server) handleGeoUpdate(w http.ResponseWriter, r *http.Request, _ strin
 	defer cancel()
 	p := s.cfg.Store.Snapshot().PolicySettings()
 	if err := s.cfg.Geo.Download(ctx, p.GeoSiteURL, p.GeoIPURL, s.cfg.AllowHTTPSubs); err != nil {
-		s.cfg.Logf("базы geo: %v", err)
+		s.cfg.Logf("geo databases: %v", err)
 		writeErr(w, http.StatusBadGateway, "базы geo: "+err.Error())
 		return
 	}
@@ -139,6 +139,6 @@ func (s *Server) handleGeoUpdate(w http.ResponseWriter, r *http.Request, _ strin
 	if reloadErr != nil {
 		v.Errors = append(v.Errors, reloadErr.Error())
 	}
-	s.cfg.Logf("базы geo обновлены")
+	s.cfg.Logf("geo databases updated")
 	writeJSON(w, http.StatusOK, v)
 }

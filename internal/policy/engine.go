@@ -159,7 +159,7 @@ func (e *Engine) Reload() error {
 	if len(errs) > 0 {
 		// сохранённые правила проверены при записи; сюда попадаем, только если
 		// state.json правили руками
-		e.logf("политика: в правилах ошибки, применяется исправная часть: %v", errs[0])
+		e.logf("policy: errors in the rules, applying the valid part: %v", errs[0])
 	}
 	var geoErr error
 	if e.Geo != nil {
@@ -637,7 +637,7 @@ func (e *Engine) Run(ctx context.Context) {
 			e.Expire()
 		}
 		if err := e.Apply(ctx); err != nil {
-			e.logf("политика: %v", err)
+			e.logf("policy: %v", err)
 		}
 	}
 }

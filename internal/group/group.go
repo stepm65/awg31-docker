@@ -308,7 +308,7 @@ func (m *Manager) applyTable(ctx context.Context, fams []string, table int, act 
 		}
 		if _, err := m.Runner.Run(ctx, "ip", append(args, "table", tbl)...); err != nil {
 			if fam == "-4" {
-				m.logf("группа (таблица %d): %v", table, err)
+				m.logf("group (table %d): %v", table, err)
 			}
 			delete(applied, key) // в следующий раз попробуем снова
 			continue
@@ -335,7 +335,7 @@ func (m *Manager) ensureHash(groups []store.Group) {
 		}
 		if err := os.WriteFile(p, []byte("1"), 0o644); err != nil && !m.hashErr {
 			m.hashErr = true
-			m.logf("балансировка: не удалось включить хеш по портам (%s): %v — соединения одной пары «клиент → адрес» будут идти через один туннель; задайте net.ipv4.fib_multipath_hash_policy=1", p, err)
+			m.logf("balancing: could not enable per-port hashing (%s): %v; connections of one client-to-address pair will use a single tunnel; set net.ipv4.fib_multipath_hash_policy=1", p, err)
 		}
 	}
 }

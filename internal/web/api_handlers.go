@@ -127,7 +127,7 @@ func (s *Server) handlePutProfile(w http.ResponseWriter, r *http.Request, _ stri
 	ctx, cancel := timeout(r, 10*time.Second)
 	defer cancel()
 	running := s.isUp(ctx, name)
-	s.cfg.Logf("профиль %s сохранён", name)
+	s.cfg.Logf("profile %s saved", name)
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "restart_required": running})
 }
 
@@ -164,7 +164,7 @@ func (s *Server) handleDeleteProfile(w http.ResponseWriter, r *http.Request, _ s
 		writeErr(w, code, err.Error())
 		return
 	}
-	s.cfg.Logf("профиль %s удалён", name)
+	s.cfg.Logf("profile %s deleted", name)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
@@ -190,7 +190,7 @@ func (s *Server) handleUp(w http.ResponseWriter, r *http.Request, _ string) {
 		return
 	}
 	_ = s.cfg.Store.Update(func(st *store.State) error { st.Up[name] = true; return nil })
-	s.cfg.Logf("туннель %s поднят", name)
+	s.cfg.Logf("tunnel %s up", name)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
@@ -208,7 +208,7 @@ func (s *Server) handleDown(w http.ResponseWriter, r *http.Request, _ string) {
 		return
 	}
 	_ = s.cfg.Store.Update(func(st *store.State) error { delete(st.Up, name); return nil })
-	s.cfg.Logf("туннель %s опущен", name)
+	s.cfg.Logf("tunnel %s down", name)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
@@ -273,7 +273,7 @@ func (s *Server) handlePutSub(w http.ResponseWriter, r *http.Request, _ string) 
 		return
 	}
 	if body.InsecureTLS && pin == "" {
-		s.cfg.Logf("ВНИМАНИЕ: для подписки %s отключена проверка TLS", name)
+		s.cfg.Logf("WARNING: TLS verification is disabled for subscription %s", name)
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

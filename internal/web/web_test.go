@@ -742,3 +742,24 @@ func TestStaticCodeIsCSPClean(t *testing.T) {
 		}
 	}
 }
+
+// При входе поле логина должно быть пустым: администратор мог выбрать любое имя, а
+// подставленное «admin» заставляет стирать его перед каждым входом.
+func TestLoginUserFieldIsNotPrefilled(t *testing.T) {
+	raw, err := staticFS.ReadFile("static/app.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var line string
+	for _, l := range strings.Split(string(raw), "\n") {
+		if strings.Contains(l, `id: "au-user"`) {
+			line = l
+		}
+	}
+	if line == "" {
+		t.Fatal("поле au-user не найдено")
+	}
+	if strings.Contains(line, `value: "admin"`) || !strings.Contains(line, `value: setup ? "admin" : ""`) {
+		t.Fatalf("при входе поле логина должно быть пустым, «admin» только при первичной настройке: %s", strings.TrimSpace(line))
+	}
+}

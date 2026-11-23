@@ -11,13 +11,13 @@ ensure_tun() {
     if [ ! -c /dev/net/tun ]; then
         mkdir -p /dev/net
         if ! mknod /dev/net/tun c 10 200 2>/dev/null; then
-            log "ОШИБКА: нет /dev/net/tun. Docker: --device /dev/net/tun (в compose: devices)"
+            log "ERROR: /dev/net/tun is missing. Docker: --device /dev/net/tun (in compose: devices)"
             exit 1
         fi
         chmod 0600 /dev/net/tun 2>/dev/null || true
     fi
     if ! (exec 3<>/dev/net/tun) 2>/dev/null; then
-        log "ОШИБКА: /dev/net/tun есть, но не открывается (нужно право NET_ADMIN)"
+        log "ERROR: /dev/net/tun exists but cannot be opened (NET_ADMIN is required)"
         exit 1
     fi
 }
@@ -35,12 +35,12 @@ set_sysctl() {
 
 prepare_net() {
     if ! set_sysctl net.ipv4.ip_forward 1; then
-        log "ВНИМАНИЕ: net.ipv4.ip_forward != 1, режим шлюза работать не будет (Docker: sysctls в compose)"
+        log "WARNING: net.ipv4.ip_forward != 1, gateway mode will not work (Docker: sysctls in compose)"
     fi
     # awg-quick ставит src_valid_mark сам при AllowedIPs = 0.0.0.0/0 и падает, если
     # /proc/sys только для чтения; задаём заранее, чтобы ошибка была понятной.
     if ! set_sysctl net.ipv4.conf.all.src_valid_mark 1; then
-        log "ВНИМАНИЕ: net.ipv4.conf.all.src_valid_mark != 1, полный туннель (0.0.0.0/0) не поднимется"
+        log "WARNING: net.ipv4.conf.all.src_valid_mark != 1, a full tunnel (0.0.0.0/0) will not come up"
     fi
     # Группы туннелей (балансировка): ядро должно делить потоки по портам, иначе весь
     # трафик одного клиента уйдёт в один туннель. Нужна только группам, поэтому не ошибка.
@@ -68,7 +68,7 @@ prepare_ipv6() {
     set_sysctl net.ipv6.conf.all.disable_ipv6 0 || true
     set_sysctl net.ipv6.conf.default.disable_ipv6 0 || true
     if [ "$(sysctl -n net.ipv6.conf.all.disable_ipv6 2>/dev/null || echo 1)" != "0" ]; then
-        log "IPv6 в контейнере недоступен: туннель будет работать только по IPv4"
+        log "IPv6 is unavailable in the container: the tunnel will work over IPv4 only"
         return 0
     fi
     set_sysctl net.ipv6.conf.all.accept_ra 2 || true
@@ -80,7 +80,7 @@ prepare_ipv6() {
         set_sysctl "net.ipv6.conf.$lan.accept_ra" 2 || true
         set_sysctl "net.ipv6.conf.$lan.accept_ra_defrtr" 1 || true
     fi
-    set_sysctl net.ipv6.conf.all.forwarding 1 || log "ВНИМАНИЕ: не удалось включить пересылку IPv6"
+    set_sysctl net.ipv6.conf.all.forwarding 1 || log "WARNING: could not enable IPv6 forwarding"
     set_sysctl net.ipv6.conf.default.forwarding 1 || true
 
     [ -n "$lan" ] || return 0
@@ -96,7 +96,7 @@ prepare_ipv6() {
     g4=${gw##*.}
     ip -6 addr add "fd00:${o123}::${o4}/64" dev "$lan" 2>/dev/null || true
     ip -6 route add default via "fd00:${o123}::${g4}" dev "$lan" metric 2048 2>/dev/null || true
-    log "IPv6: на $lan нет глобального адреса, назначен ULA fd00:${o123}::${o4}/64 (шлюз fd00:${o123}::${g4})"
+    log "IPv6: $lan has no global address, assigned ULA fd00:${o123}::${o4}/64 (gateway fd00:${o123}::${g4})"
 }
 
 # --- правила ip rule: в контейнере RouterOS встречаются лишние «lookup main» с
@@ -134,7 +134,7 @@ clean_rundir() {
     chmod 0700 "$dir"
     find "$dir" -maxdepth 1 -type f -name '*.conf' -exec rm -f {} + 2>/dev/null || true
     if ! awk -v d="$dir" '$2 == d && $3 == "tmpfs" {f=1} END {exit !f}' /proc/mounts 2>/dev/null; then
-        log "заметка: $dir не tmpfs (так на RouterOS) — рабочие копии конфигов пишутся на диск и удаляются при остановке туннеля"
+        log "note: $dir is not tmpfs (normal on RouterOS): working copies of configs are written to disk and removed when the tunnel stops"
     fi
 }
 
@@ -144,6 +144,6 @@ prepare_ipv6
 fix_ip_rules
 fix_resolvconf
 clean_rundir
-log "архитектура: $(uname -m)"
+log "architecture: $(uname -m)"
 
 exec /usr/bin/awgd "$@"

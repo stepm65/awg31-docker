@@ -231,7 +231,7 @@ func (m *Manager) sync(ctx context.Context, r store.Router, st *Status) error {
 	if prevMode == store.RouterAddressList && (r.Mode != store.RouterAddressList || r.AddressList != prevList) {
 		if c, err := m.NewClient(prevConn); err == nil {
 			n, err := Cleanup(ctx, c, prevList)
-			m.logf("RouterOS: прежний режим выключен, удалено записей: %d", n)
+			m.logf("RouterOS: previous mode switched off, entries removed: %d", n)
 			if err != nil {
 				return fmt.Errorf("очистка прежних записей: %w", err)
 			}

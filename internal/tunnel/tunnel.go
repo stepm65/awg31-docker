@@ -243,7 +243,7 @@ func (m *Manager) up(ctx context.Context, name, content string) error {
 		return fmt.Errorf("в профиле не осталось адресов: только IPv6, а IPv6 в контейнере выключен")
 	}
 	for _, n := range notes {
-		m.logf("туннель %s: %s", name, n)
+		m.logf("tunnel %s: %s", name, n)
 	}
 	var hooks conf.Hooks
 	if m.opts.AutoRoute {
@@ -271,7 +271,7 @@ func (m *Manager) up(ctx context.Context, name, content string) error {
 	if m.gateway() && m.primary == "" && !server {
 		// первый поднятый туннель становится основным
 		if err := m.setPrimaryLocked(ctx, name); err != nil {
-			m.logf("туннель %s поднят, но трафик LAN в него не направлен: %v", name, err)
+			m.logf("tunnel %s is up, but LAN traffic is not routed into it: %v", name, err)
 		}
 	}
 	return nil
@@ -311,7 +311,7 @@ func (m *Manager) down(ctx context.Context, name string) error {
 		}
 		if next != "" {
 			if perr := m.setPrimaryLocked(ctx, next); perr != nil {
-				m.logf("переход на туннель %s не удался: %v", next, perr)
+				m.logf("switching to tunnel %s failed: %v", next, perr)
 			}
 		} else if m.gateway() && !m.opts.KillSwitch {
 			m.lanRuleLocked(ctx, false)
