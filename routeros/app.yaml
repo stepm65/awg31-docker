@@ -14,7 +14,7 @@ auto-update: false
 
 services:
   awg31:
-    image: ghcr.io/stepm65/awg31-docker:0.8.1
+    image: ghcr.io/stepm65/awg31-docker:0.8.2
     hostname: awg31
     ports:
       - name: web
