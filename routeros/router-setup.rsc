@@ -48,7 +48,7 @@
 # --- 0. Список «не уводить»: частные и служебные сети ---
 :foreach n in={"10.0.0.0/8";"172.16.0.0/12";"192.168.0.0/16";"100.64.0.0/10";"169.254.0.0/16";"224.0.0.0/4";"127.0.0.0/8"} do={
   :if ([:len [/ip/firewall/address-list/find list="awg31-local" address=$n]] = 0) do={
-    /ip/firewall/address-list/add list="awg31-local" address=$n comment="awg31: не уводить в контейнер"
+    /ip/firewall/address-list/add list="awg31-local" address=$n comment="awg31: do not send to container"
   }
 }
 
