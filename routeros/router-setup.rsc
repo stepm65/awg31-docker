@@ -11,7 +11,7 @@
 #   - заготовка Netwatch по пробе здоровья :8081 (выключена);
 #   - то же для IPv6 (адрес контейнера fd00:192:168:253::2), если IPv6 включён.
 #
-#  IP контейнера: по умолчанию 192.168.253.2 (так его создаёт install-container.rsc).
+#  container IP: по умолчанию 192.168.253.2 (так его создаёт install-container.rsc).
 #  Для /app RouterOS назначает IP сам (см. /container/print) — задайте его заранее:
 #    :global AWG31IP "172.18.0.2"
 #    :global AWG31IP6 "fd00:172:18:0::2"   (или "" — без IPv6)
@@ -42,8 +42,8 @@
 :global AWG31LIST
 :local list "awg31"
 :if ([:typeof $AWG31LIST] = "str") do={ :if ([:len $AWG31LIST] > 0) do={ :set list $AWG31LIST } }
-:put ("IP контейнера: " . $ip . " / " . $ip6)
-:if ($all) do={ :put "режим: весь интернет-трафик LAN через контейнер" } else={ :put ("режим: только адреса из списка " . $list) }
+:put ("container IP: " . $ip . " / " . $ip6)
+:if ($all) do={ :put "mode: ALL LAN internet traffic goes through the container" } else={ :put ("mode: only addresses from the list " . $list) }
 
 # --- 0. Список «не уводить»: частные и служебные сети ---
 :foreach n in={"10.0.0.0/8";"172.16.0.0/12";"192.168.0.0/16";"100.64.0.0/10";"169.254.0.0/16";"224.0.0.0/4";"127.0.0.0/8"} do={
@@ -53,20 +53,20 @@
 }
 
 # --- 1. Списки интерфейсов (стандартные LAN/WAN) ---
-:if ([:len [/interface/list/find name="WAN"]] = 0) do={ /interface/list/add name="WAN"; :put "+ список WAN (добавьте в него WAN-порты!)" }
-:if ([:len [/interface/list/find name="LAN"]] = 0) do={ /interface/list/add name="LAN"; :put "+ список LAN (добавьте в него bridge/LAN!)" }
+:if ([:len [/interface/list/find name="WAN"]] = 0) do={ /interface/list/add name="WAN"; :put "+ list WAN created (add your WAN ports to it!)" }
+:if ([:len [/interface/list/find name="LAN"]] = 0) do={ /interface/list/add name="LAN"; :put "+ list LAN created (add your bridge/LAN to it!)" }
 
 # --- 2. Таблица и маршруты ---
-:if ([:len [/routing/table/find name="awg31"]] = 0) do={ /routing/table/add name="awg31" fib; :put "+ таблица awg31" }
+:if ([:len [/routing/table/find name="awg31"]] = 0) do={ /routing/table/add name="awg31" fib; :put "+ routing table awg31" }
 :if ([:len [/ip/route/find comment="awg31_default"]] = 0) do={
   /ip/route/add dst-address=0.0.0.0/0 gateway=$ip routing-table="awg31" comment="awg31_default"
-  :put ("+ default -> " . $ip . " в таблице awg31")
+  :put ("+ default -> " . $ip . " in table awg31")
 } else={
   /ip/route/set [find comment="awg31_default"] gateway=$ip
 }
 :if ([:len [/ip/route/find comment="awg31_bh"]] = 0) do={
   /ip/route/add blackhole dst-address=0.0.0.0/0 distance=254 routing-table="awg31" comment="awg31_bh"
-  :put "+ blackhole в таблице awg31 (нет туннеля — нет утечки мимо VPN)"
+  :put "+ blackhole in table awg31 (no tunnel = no leak around the VPN)"
 }
 
 # --- 3. fasttrack не должен съедать помеченные соединения ---
@@ -110,7 +110,7 @@
     /ip/firewall/filter/add chain=forward action=drop connection-state=new in-interface-list=WAN dst-address=$ip \
       comment="awg31_no_wan"
   }
-  :put "+ запрет новых соединений с WAN к контейнеру (консоль и проба только из LAN)"
+  :put "+ new connections from WAN to the container are blocked (console and probe from LAN only)"
 } else={
   /ip/firewall/filter/set [find comment="awg31_no_wan"] dst-address=$ip
 }
@@ -122,7 +122,7 @@
   :local first [/ip/firewall/filter/find comment="awg31_no_wan"]
   /ip/firewall/filter/add chain=forward action=accept connection-nat-state=dstnat in-interface-list=WAN dst-address=$ip \
     protocol=udp dst-port=51820 disabled=yes comment="awg31_server_accept" place-before=[:pick $first 0]
-  :put "+ заготовка режима сервера (awg31_server_*, выключена)"
+  :put "+ server mode rules (awg31_server_*, disabled)"
 } else={
   /ip/firewall/nat/set [find comment="awg31_server_dstnat"] to-addresses=$ip
   /ip/firewall/filter/set [find comment="awg31_server_accept"] dst-address=$ip
@@ -135,7 +135,7 @@
     :if ([:len [/ipv6/route/find comment="awg31_default"]] = 0) do={
       /ipv6/route/add dst-address=::/0 gateway=$ip6 routing-table="awg31" comment="awg31_default"
       /ipv6/route/add blackhole dst-address=::/0 distance=254 routing-table="awg31" comment="awg31_bh"
-      :put ("+ IPv6 default -> " . $ip6 . " в таблице awg31 (+blackhole)")
+      :put ("+ IPv6 default -> " . $ip6 . " in table awg31 (+blackhole)")
     } else={
       /ipv6/route/set [find comment="awg31_default"] gateway=$ip6
     }
@@ -156,8 +156,8 @@
       /ipv6/firewall/filter/add chain=forward action=drop connection-state=new in-interface-list=WAN dst-address=$ip6 \
         comment="awg31_no_wan"
     }
-    :put "+ IPv6: маршрут, mangle, NAT и защита от WAN"
-  } on-error={ :put "IPv6 на роутере выключен или недоступен: IPv6-часть пропущена" }
+    :put "+ IPv6: route, mangle, NAT and WAN protection"
+  } on-error={ :put "IPv6 is disabled or unavailable on the router: IPv6 part skipped" }
 }
 
 # --- 7. Netwatch по пробе здоровья (выключен; включите, когда туннель заработает) ---
@@ -171,10 +171,10 @@
 }
 
 :put "==="
-:put "ГОТОВО. Адреса, которые должны идти через VPN, добавляйте так:"
+:put "DONE. Add addresses that must go through the VPN like this:"
 :put ("  /ip/firewall/address-list/add list=" . $list . " address=example.com")
 :put ("  /ipv6/firewall/address-list/add list=" . $list . " address=example.com")
 :put "Netwatch: /tool/netwatch/enable [find comment=\"awg31_health\"]"
-:put ("DNS через контейнер (для доменных правил): /ip/dns/set servers=" . $ip)
-:put "Режим сервера: /ip/firewall/nat/enable [find comment=\"awg31_server_dstnat\"]; /ip/firewall/filter/enable [find comment=\"awg31_server_accept\"]"
+:put ("DNS through the container (for domain rules): /ip/dns/set servers=" . $ip)
+:put "Server mode: /ip/firewall/nat/enable [find comment=\"awg31_server_dstnat\"]; /ip/firewall/filter/enable [find comment=\"awg31_server_accept\"]"
 }

@@ -23,6 +23,7 @@
 #     tmp1), затем :local disk "tmp1" и :local datadir "awg31/data" (данные остаются на флеш,
 #     они небольшие). После перезагрузки роутера содержимое tmp1 пропадает: выполните
 #     `/container/remove [find name=awg31]` и запустите скрипт снова.
+# Сообщения скрипта на английском: терминалы RouterOS (SSH, serial) часто не выводят кириллицу.
 # ВАЖНО: значения задаются ЗДЕСЬ, в файле. Команда `:local tarfile ...` в консоли в импортируемый
 # скрипт не передаётся.
 # Офлайн-установка: путь к .tar нужной архитектуры (awg31-0.7.0-linux-arm64.tar или
@@ -47,18 +48,18 @@
 :if ([:len $disk] > 0) do={ :set base ($disk . "/awg31") }
 :local datapath ($base . "/data")
 :if ([:len $datadir] > 0) do={ :set datapath $datadir }
-:if (([:len $disk] > 0) && ([:len [/file/find name=$disk]] = 0)) do={ :error ("диск " . $disk . " не найден в /file (/disk/print)") }
+:if (([:len $disk] > 0) && ([:len [/file/find name=$disk]] = 0)) do={ :error ("disk " . $disk . " not found in /file (see /disk/print)") }
 :if ([:len $disk] = 0) do={
   :local free [/system/resource/get free-hdd-space]
-  :put ("встроенная память: свободно " . ($free / 1048576) . " МиБ")
-  :if ($free < 62914560) do={ :error "на встроенной памяти меньше 60 МиБ: освободите место (удалите лишние файлы и пакеты) или используйте USB" }
+  :put ("internal flash, free MiB: " . ($free / 1048576))
+  :if ($free < 62914560) do={ :error "less than 60 MiB free on internal flash: free some space, use USB, or use a RAM disk (see the header of this file)" }
 }
-:if (([:len $tarfile] > 0) && ([:len [/file/find name=$tarfile]] = 0)) do={ :error ("файл " . $tarfile . " не найден в /file: загрузите архив на роутер или поправьте путь") }
-:if ([:len [/system/package/find name="container"]] = 0) do={ :error "нет пакета container (System -> Packages)" }
-:if ([/system/device-mode/get container] = false) do={ :error "включите /system/device-mode/update container=yes и подтвердите кнопкой" }
+:if (([:len $tarfile] > 0) && ([:len [/file/find name=$tarfile]] = 0)) do={ :error ("file " . $tarfile . " not found in /file: upload the archive or fix the path") }
+:if ([:len [/system/package/find name="container"]] = 0) do={ :error "container package is not installed (System -> Packages)" }
+:if ([/system/device-mode/get container] = false) do={ :error "enable container mode: /system/device-mode/update container=yes, then confirm with the button or a power cycle" }
 :local arch [/system/resource/get architecture-name]
-:put ("архитектура роутера: " . $arch)
-:if (!($arch = "arm64" || $arch = "arm" || $arch = "x86_64" || $arch = "x86")) do={ :error ("архитектура " . $arch . " не поддерживается (нужны arm64, arm или x86)") }
+:put ("router architecture: " . $arch)
+:if (!($arch = "arm64" || $arch = "arm" || $arch = "x86_64" || $arch = "x86")) do={ :error ("architecture " . $arch . " is not supported (need arm64, arm or x86)") }
 
 # --- 1. veth и адрес роутера ---
 :if ([:len [/interface/veth/find name="veth-awg31"]] = 0) do={
@@ -67,14 +68,14 @@
 }
 :if ([:len [/ip/address/find interface="veth-awg31"]] = 0) do={
   /ip/address/add address=($rip . "/30") interface="veth-awg31"
-  :put ("+ адрес роутера " . $rip . "/30")
+  :put ("+ router address " . $rip . "/30")
 }
 :do {
   :if ([:len [/ipv6/address/find interface="veth-awg31"]] = 0) do={
     /ipv6/address/add address=($rip6 . "/64") interface="veth-awg31" advertise=no
-    :put ("+ IPv6 роутера " . $rip6 . "/64")
+    :put ("+ router IPv6 " . $rip6 . "/64")
   }
-} on-error={ :put "IPv6 на роутере выключен: контейнер будет работать по IPv4" }
+} on-error={ :put "IPv6 is disabled on the router: the container will use IPv4 only" }
 
 # --- 2. Переменные окружения (список awg31 пересоздаётся целиком) ---
 /container/envs/remove [find list="awg31"]
@@ -102,19 +103,29 @@
     /container/add name="awg31" remote-image=$image interface="veth-awg31" root-dir=($base . "/root") \
       envlist="awg31" mountlists="awg31-data" hostname="awg31" dns=$dns start-on-boot=yes logging=yes
   }
-  :put "+ контейнер awg31 (распаковка образа может занять несколько минут)"
+  :put "+ container awg31 added (unpacking the image can take a few minutes)"
 }
 
 # --- 5. Дождаться распаковки и запустить ---
+# Статус читаем через find, а не /container/get: имя status принимается не везде.
 :local tries 0
-:while (([/container/get [find name="awg31"] status] = "extracting" || [/container/get [find name="awg31"] status] = "downloading") && $tries < 120) do={
-  :delay 5s
-  :set tries ($tries + 1)
+:local busy true
+:while ($busy && $tries < 120) do={
+  :do {
+    :set busy (([:len [/container/find where name="awg31" status="extracting"]] > 0) || ([:len [/container/find where name="awg31" status="downloading"]] > 0))
+  } on-error={
+    :set busy false
+    :put "cannot read the container status: check /container/print and start it by hand"
+  }
+  :if ($busy) do={
+    :delay 5s
+    :set tries ($tries + 1)
+  }
 }
-:do { /container/start [find name="awg31"] } on-error={ :put "контейнер уже запущен или ещё не готов: проверьте /container/print" }
+:do { /container/start [find name="awg31"] } on-error={ :put "the container is already running or not ready yet: check /container/print, then /container/start awg31" }
 
 :put "==="
-:put ("Веб-консоль: https://" . $cip . ":8443 (только из LAN)")
-:put "Токен первичной настройки: /log/print where message~\"токен\""
-:put "Дальше: /import router-setup.rsc"
+:put ("Web console: https://" . $cip . ":8443 (from LAN only)")
+:put "One-time setup token (long hex string) is in the container log: /log/print where topics~\"container\""
+:put "Next: /import router-setup.rsc"
 }
