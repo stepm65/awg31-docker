@@ -1354,6 +1354,7 @@ const rtRevert = () => {
 };
 const rtSave = () => act(async () => {
   const ed = S.polEdit;
+  polGen++;
   try {
     S.pol = await api("PUT", "/api/policy", { ...ed, geo_update_hours: parseInt(ed.geo_update_hours, 10) || 0 });
   } catch (e) {
@@ -1493,7 +1494,7 @@ function rtDraw(fk) {
 
 /* Диалог «Добавить сервис / Изменить»: правки идут в черновик и попадают в правила только по «Готово». */
 function rtDialog(b) {
-  const m = S.rt.model, isNew = !b, info = b ? rtInfo(b) : null;
+  const isNew = !b, info = b ? rtInfo(b) : null;
   const draft = { t: "block", head: true, name: b ? info.name : "", icon: b ? (info.svc ? info.svc.id : b.icon) : "", hraw: b ? b.hraw : null,
     pre: b ? b.pre : [], trail: b ? b.trail : 1, lines: b ? b.lines.map((l) => ({ ...l, pre: l.pre.slice() })) : [] };
   const ui = { dest: b ? RULES.dest(b) : "PROXY", touched: !!b, lastPick: b && info.svc ? svcName(info.svc) : "" };
@@ -1601,7 +1602,7 @@ function rtDialog(b) {
     let target;
     if (isNew) {
       target = Object.assign(draft, { name, hraw: null });
-      RULES.add(m, target);
+      RULES.add(S.rt.model, target);
     } else {
       const changed = name !== info.name || draft.icon !== (info.svc ? info.svc.id : b.icon);
       target = Object.assign(b, { name: changed ? name : b.name, icon: draft.icon, lines: draft.lines, head: b.head || changed, hraw: changed ? null : b.hraw });
@@ -1635,16 +1636,24 @@ function rtDialog(b) {
   if (window.matchMedia("(pointer: fine)").matches) (isNew ? find : nameInp).focus();
 }
 
+// Номер сохранения: ответ фонового GET, начатого до сохранения, устарел и страницу не трогает.
+let polGen = 0;
+const rtDialogOpen = () => !!document.querySelector("dialog.rt-dialog[open]");
+
 async function loadPolicy(quiet) {
-  const first = !S.polEdit;
+  const first = !S.polEdit, gen = polGen;
   try {
-    S.pol = await api("GET", "/api/policy");
-    if (!S.polEdit || !S.dirty) { S.polEdit = { ...S.pol.settings }; rtReset(); }
+    const v = await api("GET", "/api/policy");
+    if (gen !== polGen) return;
+    S.pol = v;
+    // Пока открыт диалог сервиса или есть несохранённые правки, модель правил не пересоздаётся:
+    // диалог держит ссылку на неё, и добавленное в него пропало бы.
+    if (!S.polEdit || !(S.dirty || rtDialogOpen())) { S.polEdit = { ...S.pol.settings }; rtReset(); }
   } catch (e) {
     if (!quiet) { say("error", e.message); renderFlash(); }
   }
   if (first || !S.grp) try { S.grp = await api("GET", "/api/groups"); } catch (_) { /* группы нужны только для списка «Куда» */ }
-  if (S.route.page === "policy" && !S.dirty && !S.busy && !rtTyping()) renderMain();
+  if (S.route.page === "policy" && !S.dirty && !S.busy && !rtTyping() && !rtDialogOpen()) renderMain();
 }
 
 function pagePolicy() {
@@ -1654,7 +1663,7 @@ function pagePolicy() {
   const dirty = rtDirty;
   const text = (id, key) => h("input", { id, type: "text", class: "mono", value: ed[key] || "", spellcheck: "false",
     oninput: (e) => { ed[key] = e.target.value; dirty(); } });
-  const updateGeo = () => act(async () => { S.pol = await api("POST", "/api/geo/update"); S.polEdit = { ...S.pol.settings }; rtReset(); }, t("polGeoUpdated"));
+  const updateGeo = () => act(async () => { polGen++; S.pol = await api("POST", "/api/geo/update"); S.polEdit = { ...S.pol.settings }; rtReset(); }, t("polGeoUpdated"));
   const runTest = async () => {
     const q = (document.getElementById("pol-q") || {}).value || "";
     try { S.polTest = await api("POST", "/api/policy/test", { query: q }); } catch (e) { S.polTest = { error: e.message }; }
