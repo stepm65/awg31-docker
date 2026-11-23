@@ -55,6 +55,17 @@ awg31 работает контейнером на роутерах MikroTik с 
 
 Проверка: `/container/shell awg31`, затем `ping -c2 1.1.1.1` и `nslookup <хост панели> 1.1.1.1`.
 
+## Удаление
+
+`routeros/uninstall.rsc` откатывает `install-container.rsc` и `router-setup.rsc`: останавливает и удаляет контейнер `awg31`, его `veth-awg31` с адресами, списки envs/mounts, правила mangle/nat/filter (IPv4 и IPv6), маршруты и таблицу `awg31`, Netwatch и служебные записи списков адресов. Затрагиваются только объекты awg31 (точные имена и комментарии `awg31_*`), остальные контейнеры и правила роутера остаются как есть. Скрипт идемпотентный и в конце проверяет, что ничего не осталось.
+
+```
+:global AWG31PURGE true
+/import uninstall.rsc
+```
+
+Без `AWG31PURGE true` файлы (образ `.tar`, каталог `awg31/data` с профилями и ключами) и записи списка `awg31`, добавленные вручную, остаются. Скрипт не меняет правило fasttrack (`router-setup.rsc` добавил ему `connection-mark=no-mark`), `/ipv6/settings`, списки интерфейсов WAN/LAN и RAM-диск `tmp1`: прежнее состояние им неизвестно. Проверьте fasttrack командой `/ip/firewall/filter/print where action=fasttrack-connection`. Установленное через `/app` удаляется командами `/app/print` и `/app/remove`.
+
 ## Маршрутизация
 
 `router-setup.rsc` направляет в туннель трафик клиентов к адресам из списка `awg31`:
