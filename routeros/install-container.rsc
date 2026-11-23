@@ -16,8 +16,13 @@
 # --- Параметры ---
 # Диск для образа и данных: USB/SD, не внутренняя NAND.
 :local disk "usb1"
-# Офлайн-установка: путь к .tar нужной архитектуры (awg31-0.3.0-linux-arm64.tar или
-# awg31-0.3.0-linux-arm-v7.tar). Пусто — образ скачивается из реестра.
+# Для проверки без флешки: :local disk "" — тогда всё лежит на встроенной памяти роутера
+# (каталог awg31/). Нужно около 60 МБ свободного места (/system/resource/print, free-hdd-space);
+# для постоянной работы лучше USB/SD: на NAND много записей быстро её изнашивают.
+# ВАЖНО: значения задаются ЗДЕСЬ, в файле. Команда `:local tarfile ...` в консоли в импортируемый
+# скрипт не передаётся.
+# Офлайн-установка: путь к .tar нужной архитектуры (awg31-0.7.0-linux-arm64.tar или
+# awg31-0.7.0-linux-arm-v7.tar). Пусто — образ скачивается из реестра.
 :local tarfile ""
 # Образ в реестре (многоархитектурный: RouterOS берёт arm64 или arm сам).
 # Если ваша версия не принимает реестр в имени, задайте
@@ -32,6 +37,14 @@
 :local dns "1.1.1.1"
 
 # --- 0. Проверки ---
+:local base "awg31"
+:if ([:len $disk] > 0) do={ :set base ($disk . "/awg31") }
+:if ([:len $disk] = 0) do={
+  :local free [/system/resource/get free-hdd-space]
+  :put ("встроенная память: свободно " . ($free / 1048576) . " МиБ")
+  :if ($free < 62914560) do={ :error "на встроенной памяти меньше 60 МиБ: освободите место (удалите лишние файлы и пакеты) или используйте USB" }
+}
+:if (([:len $tarfile] > 0) && ([:len [/file/find name=$tarfile]] = 0)) do={ :error ("файл " . $tarfile . " не найден в /file: загрузите архив на роутер или поправьте путь") }
 :if ([:len [/system/package/find name="container"]] = 0) do={ :error "нет пакета container (System -> Packages)" }
 :if ([/system/device-mode/get container] = false) do={ :error "включите /system/device-mode/update container=yes и подтвердите кнопкой" }
 :local arch [/system/resource/get architecture-name]
@@ -67,18 +80,17 @@
 /container/envs/add list="awg31" key="DNS_ENABLE" value="on"
 /container/envs/add list="awg31" key="GOMEMLIMIT" value="64MiB"
 
-# --- 3. Том для данных (профили, пароль, сертификат) ---
-:if ([:len [/container/mounts/find list="awg31-data"]] = 0) do={
-  /container/mounts/add list="awg31-data" src=($disk . "/awg31/data") dst="/data"
-}
+# --- 3. Том для данных (профили, пароль, сертификат); пересоздаётся, чтобы подхватить новый путь ---
+/container/mounts/remove [find list="awg31-data"]
+/container/mounts/add list="awg31-data" src=($base . "/data") dst="/data"
 
 # --- 4. Контейнер ---
 :if ([:len [/container/find name="awg31"]] = 0) do={
   :if ([:len $tarfile] > 0) do={
-    /container/add name="awg31" file=$tarfile interface="veth-awg31" root-dir=($disk . "/awg31/root") \
+    /container/add name="awg31" file=$tarfile interface="veth-awg31" root-dir=($base . "/root") \
       envlist="awg31" mountlists="awg31-data" hostname="awg31" dns=$dns start-on-boot=yes logging=yes
   } else={
-    /container/add name="awg31" remote-image=$image interface="veth-awg31" root-dir=($disk . "/awg31/root") \
+    /container/add name="awg31" remote-image=$image interface="veth-awg31" root-dir=($base . "/root") \
       envlist="awg31" mountlists="awg31-data" hostname="awg31" dns=$dns start-on-boot=yes logging=yes
   }
   :put "+ контейнер awg31 (распаковка образа может занять несколько минут)"
