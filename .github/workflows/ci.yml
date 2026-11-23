@@ -17,6 +17,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache: false # зависимостей нет (только stdlib), go.sum отсутствует
       - name: gofmt
         run: |
           test -z "$(gofmt -l .)" || { gofmt -l .; echo "запустите gofmt -w ."; exit 1; }
@@ -40,14 +41,15 @@ jobs:
     strategy:
       matrix:
         include:
-          - { goarch: arm64, goarm: "", qemu: qemu-aarch64-static }
-          - { goarch: arm, goarm: "7", qemu: qemu-arm-static }
+          - { goarch: arm64, goarm: "", qemu: qemu-aarch64 }
+          - { goarch: arm, goarm: "7", qemu: qemu-arm }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - run: sudo apt-get update -q && sudo apt-get install -y -q qemu-user-static
+          cache: false # зависимостей нет (только stdlib), go.sum отсутствует
+      - run: sudo apt-get update -q && sudo apt-get install -y -q qemu-user
       - name: go test (${{ matrix.goarch }}${{ matrix.goarm }})
         env:
           CGO_ENABLED: "0"
