@@ -204,4 +204,14 @@ func TestGeoCategoriesSearch(t *testing.T) {
 	if code, _, _ := e.do("GET", "/api/geo/categories?kind=bogus&q=you", nil, nil); code != http.StatusBadRequest {
 		t.Fatalf("неизвестный вид: %d", code)
 	}
+	// all=1 отдаёт весь список (для каталога IPList), без поиска и без лимита подсказок
+	code, m, raw := e.do("GET", "/api/geo/categories?kind=geosite&all=1", nil, nil)
+	if got, _ := m["items"].([]any); code != 200 || len(got) != 3 {
+		t.Fatalf("весь список: %d %s", code, raw)
+	}
+	// базы geoip нет: пустой список, а не null и не ошибка
+	code, m, raw = e.do("GET", "/api/geo/categories?kind=geoip&all=1", nil, nil)
+	if got, ok := m["items"].([]any); code != 200 || !ok || len(got) != 0 {
+		t.Fatalf("пустой список: %d %s", code, raw)
+	}
 }

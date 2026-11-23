@@ -169,7 +169,9 @@ const I18N = {
     rtSettings: "Списки и DNS", rtPresetLabel: "Источник списков", rtPresetLoyal: "Loyalsoldier (по умолчанию)", rtPresetIplist: "IPList (opencck.org)",
     rtPresetHint: "Подставляет ссылки на geosite.dat и geoip.dat. После сохранения нажмите «Обновить базы». У IPList свои имена тегов: например geoip:telegram.org вместо geoip:telegram, каталог сервисов подставляет их сам. IPList распространяется под лицензией MIT.",
     svcRu: "Россия (IP)", svcPrivate: "Локальные сети", rtDlgAdd: "Добавить сервис", rtDlgEdit: "Изменить: {name}", rtCatalog: "Каталог сервисов", rtCatalogHint: "Выбор подставляет название, значок и условия.",
-    rtCatalogSearch: "Найти в каталоге", rtName: "Название", rtConds: "Условия", rtKind: "Тип условия", rtKindAuto: "Автоопределение",
+    rtCatalogSearch: "Найти в каталоге", rtGroupsSub: "Группы", rtSitesSub: "Сайты",
+    rtCatalogIplist: "Список из загруженной базы IPList: группа — набор сайтов (ai, messengers), сайт — один портал. Выбор подставляет geosite и geoip.",
+    rtCatalogNoDb: "База IPList ещё не загружена. Сохраните настройки и нажмите «Обновить базы»: тогда здесь появится весь список IPList.", rtName: "Название", rtConds: "Условия", rtKind: "Тип условия", rtKindAuto: "Автоопределение",
     rtKindDomain: "Домен и поддомены", rtKindFull: "Только это имя", rtKindKeyword: "Часть имени", rtKindCidr: "Сеть или IP",
     rtCondValue: "Домены, сети или категории", rtCondAdd: "Добавить", rtCondRemove: "Убрать условие {v}", rtCondNone: "Условий пока нет",
     rtCondNeed: "Добавьте хотя бы одно условие.", rtCondBad: "Не понял: {v}", rtCondDup: "уже есть: {v}",
@@ -333,7 +335,9 @@ const I18N = {
     rtSettings: "Lists and DNS", rtPresetLabel: "List source", rtPresetLoyal: "Loyalsoldier (default)", rtPresetIplist: "IPList (opencck.org)",
     rtPresetHint: "Fills in the geosite.dat and geoip.dat links. After saving, press \"Update databases\". IPList names its tags differently, for example geoip:telegram.org instead of geoip:telegram; the service catalog fills them in for you. IPList is released under the MIT license.",
     svcRu: "Russia (IP)", svcPrivate: "Local networks", rtDlgAdd: "Add service", rtDlgEdit: "Edit: {name}", rtCatalog: "Service catalog", rtCatalogHint: "Picking one fills in the name, icon and conditions.",
-    rtCatalogSearch: "Search the catalog", rtName: "Name", rtConds: "Conditions", rtKind: "Condition type", rtKindAuto: "Auto-detect",
+    rtCatalogSearch: "Search the catalog", rtGroupsSub: "Groups", rtSitesSub: "Sites",
+    rtCatalogIplist: "List from the downloaded IPList database: a group is a set of sites (ai, messengers), a site is one portal. Picking one fills in geosite and geoip.",
+    rtCatalogNoDb: "The IPList database is not downloaded yet. Save the settings and press \"Update databases\": the full IPList list will appear here.", rtName: "Name", rtConds: "Conditions", rtKind: "Condition type", rtKindAuto: "Auto-detect",
     rtKindDomain: "Domain and subdomains", rtKindFull: "This exact name", rtKindKeyword: "Part of a name", rtKindCidr: "Network or IP",
     rtCondValue: "Domains, networks or categories", rtCondAdd: "Add", rtCondRemove: "Remove condition {v}", rtCondNone: "No conditions yet",
     rtCondNeed: "Add at least one condition.", rtCondBad: "Not understood: {v}", rtCondDup: "already there: {v}",
@@ -1285,10 +1289,25 @@ const SVC_IPLIST = {
   signal: ["geosite:signal.org", "geoip:signal.org"],
   linkedin: ["geosite:linkedin.com", "geoip:linkedin.com"],
 };
+// IPList выбран на странице (ссылки обеих баз совпадают с его набором).
+const iplistChosen = () => { const ed = S.polEdit || {}; return ed.geosite_url === GEO_PRESETS.iplist[0] && ed.geoip_url === GEO_PRESETS.iplist[1]; };
 // Условия записи каталога под источник баз, который сейчас выбран на странице.
 function svcConds(s) {
-  const ed = S.polEdit || {}, alt = SVC_IPLIST[s.id];
-  return alt && ed.geosite_url === GEO_PRESETS.iplist[0] && ed.geoip_url === GEO_PRESETS.iplist[1] ? alt : s.conds;
+  const alt = SVC_IPLIST[s.id];
+  return alt && iplistChosen() ? alt : s.conds;
+}
+// Весь список IPList из скачанной базы: группа (ai, messengers) или сайт (telegram.org). Известным сервисам
+// достаются название и значок из каталога, остальные получают буквенную плитку. Условия: geosite и, если
+// у тега есть адреса, geoip.
+function iplistEntries(sites, ips) {
+  const known = {}, sset = new Set(sites), iset = new Set(ips);
+  SVC.catalog.forEach((s) => (SVC_IPLIST[s.id] || []).forEach((c) => { known[c.replace(/^geo(?:site|ip):/, "")] = s; }));
+  return Array.from(new Set(sites.concat(ips))).sort().map((tag) => {
+    const s = known[tag], name = s ? svcName(s) : tag;
+    return { id: s ? s.id : "", name, tile: { slug: s ? s.icon : null, id: s ? s.id : "", name },
+      conds: (sset.has(tag) ? ["geosite:" + tag] : []).concat(iset.has(tag) ? ["geoip:" + tag] : []),
+      group: !/[.@]/.test(tag), n: (tag + " " + name).toLowerCase() };
+  });
 }
 const SVG_NS = "http://www.w3.org/2000/svg";
 const fmtNum = (n) => Number(n).toLocaleString(lang === "en" ? "en-US" : "ru-RU");
@@ -1543,24 +1562,56 @@ function rtDialog(b) {
   const tileSlot = h("span", { class: "rt-dlg-tile" });
   const drawTile = () => tileSlot.replaceChildren(rtTile(draft.name || draft.icon || draft.lines.length ? rtInfo(draft) : { slug: null, id: "", name: "+" }, "lg"));
 
-  // каталог
+  // каталог: по умолчанию наш, а при выбранном IPList с загруженной базой — её полный список
   const grid = h("div", { class: "svc-grid", role: "group", "aria-label": t("rtCatalog") });
-  const picks = SVC.catalog.map((s) => {
-    const el = h("button", { type: "button", class: "svc-pick", "aria-pressed": String(draft.icon === s.id), "data-n": (svcName(s) + " " + s.name + " " + s.id).toLowerCase(),
-      onclick: () => {
-        if (!draft.name || draft.name === ui.lastPick) { draft.name = svcName(s); nameInp.value = draft.name; }
-        draft.icon = s.id; ui.lastPick = svcName(s);
-        if (!ui.touched) draft.lines = [];
-        svcConds(s).forEach((c) => RULES.addCond(draft, c));
-        picks.forEach((p) => p.setAttribute("aria-pressed", String(p === el)));
-        drawConds(); drawTile();
-      } },
-    rtTile({ slug: s.icon, id: s.id, name: svcName(s) }), h("span", {}, svcName(s)));
-    return el;
-  });
-  grid.append(...picks);
-  const find = h("input", { type: "search", id: "rt-find", "aria-label": t("rtCatalogSearch"), placeholder: t("rtCatalogSearch"), autocomplete: "off",
-    oninput: (e) => { const q = e.target.value.trim().toLowerCase(); picks.forEach((p) => { p.hidden = !!q && !p.dataset.n.includes(q); }); } });
+  const catHint = h("p", { class: "hint" }, t("rtCatalogHint"));
+  const find = h("input", { type: "search", id: "rt-find", "aria-label": t("rtCatalogSearch"), placeholder: t("rtCatalogSearch"), autocomplete: "off", oninput: () => applyFind() });
+  let picks = [];
+  function applyFind() {
+    const q = find.value.trim().toLowerCase();
+    picks.forEach((p) => { p.hidden = !!q && !p.dataset.n.includes(q); });
+    grid.querySelectorAll(".svc-sub").forEach((hd) => {
+      let on = false;
+      for (let n = hd.nextElementSibling; n && !n.classList.contains("svc-sub"); n = n.nextElementSibling) if (!n.hidden) { on = true; break; }
+      hd.hidden = !on;
+    });
+  }
+  function drawCatalog(entries, sections) {
+    picks = [];
+    const nodes = [];
+    const part = (list, title) => {
+      if (!list.length) return;
+      if (title) nodes.push(h("h4", { class: "svc-sub" }, title));
+      list.forEach((e) => {
+        const el = h("button", { type: "button", class: "svc-pick", "aria-pressed": String(!!e.id && draft.icon === e.id), "data-n": e.n,
+          onclick: () => {
+            if (!draft.name || draft.name === ui.lastPick) { draft.name = e.name; nameInp.value = draft.name; }
+            draft.icon = e.id; ui.lastPick = e.name;
+            if (!ui.touched) draft.lines = [];
+            e.conds.forEach((c) => RULES.addCond(draft, c));
+            picks.forEach((p) => p.setAttribute("aria-pressed", String(p === el)));
+            drawConds(); drawTile();
+          } },
+        rtTile(e.tile), h("span", {}, e.name));
+        picks.push(el); nodes.push(el);
+      });
+    };
+    if (sections) { part(entries.filter((e) => e.group), t("rtGroupsSub")); part(entries.filter((e) => !e.group), t("rtSitesSub")); } else part(entries);
+    grid.replaceChildren(...nodes);
+    applyFind();
+  }
+  drawCatalog(SVC.catalog.map((s) => ({ id: s.id, name: svcName(s), tile: { slug: s.icon, id: s.id, name: svcName(s) }, conds: svcConds(s),
+    n: (svcName(s) + " " + s.name + " " + s.id).toLowerCase() })), false);
+  if (iplistChosen()) {
+    const g = (S.pol && S.pol.geo) || {};
+    if (g.geosite && g.geosite.present && g.geosite.source === GEO_PRESETS.iplist[0]) {
+      Promise.all(["geosite", "geoip"].map((k) => api("GET", "/api/geo/categories?kind=" + k + "&all=1").then((r) => r.items || []).catch(() => []))).then(([sites, ips]) => {
+        if (!dlg.isConnected || !sites.length) return;
+        drawCatalog(iplistEntries(sites, ips), true);
+        catHint.textContent = t("rtCatalogIplist");
+      });
+    } else catHint.textContent = t("rtCatalogNoDb");
+  }
 
   // условия
   const list = h("ul", { class: "rt-cond-list" });
@@ -1640,7 +1691,7 @@ function rtDialog(b) {
     h("header", {}, h("h2", { id: "rt-dlg-title" }, isNew ? t("rtDlgAdd") : t("rtDlgEdit", { name: info.name })),
       h("button", { type: "button", class: "icon-btn", "aria-label": t("close"), onclick: close }, icon("x", 18))),
     h("div", { class: "rt-dlg-body" },
-      h("section", {}, h("h3", {}, t("rtCatalog")), h("p", { class: "hint" }, t("rtCatalogHint")), h("div", { class: "field" }, find), grid),
+      h("section", {}, h("h3", {}, t("rtCatalog")), catHint, h("div", { class: "field" }, find), grid),
       h("section", {},
         h("div", { class: "rt-name-row" }, tileSlot, h("div", { class: "field" }, h("label", { for: "rt-name" }, t("rtName")), nameInp)),
         h("h3", {}, t("rtConds")), list,

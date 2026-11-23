@@ -194,6 +194,18 @@ func (s *Server) handleGeoCategories(w http.ResponseWriter, r *http.Request, _ s
 		writeErr(w, http.StatusBadRequest, "kind: geosite или geoip")
 		return
 	}
+	// all=1 — весь список категорий загруженной базы: из него редактор строит каталог IPList.
+	if r.URL.Query().Get("all") == "1" {
+		all := s.cfg.Geo.Categories(kind)
+		if len(all) > 5000 {
+			all = all[:5000]
+		}
+		if all == nil {
+			all = []string{}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"kind": kind, "items": all})
+		return
+	}
 	q := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
 	limit := 30
 	if v, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && v > 0 && v < limit {
