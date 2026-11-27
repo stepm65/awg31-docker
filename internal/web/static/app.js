@@ -1063,7 +1063,7 @@ function networkCard() {
 async function loadFailover(quiet) {
   try {
     S.fo = await api("GET", "/api/failover");
-    if (!S.foEdit || !S.dirty) S.foEdit = { settings: { ...S.fo.settings }, order: [...S.fo.order] };
+    if (!S.foEdit || !S.dirty) S.foEdit = { settings: { ...S.fo.settings }, order: [...(S.fo.order || [])] };
   } catch (e) {
     if (!quiet) { say("error", e.message); renderFlash(); }
   }
@@ -1090,9 +1090,9 @@ function pageFailover() {
   const move = (i, d) => { const o = ed.order; [o[i], o[i + d]] = [o[i + d], o[i]]; S.dirty = true; renderMain(); };
   const save = () => act(async () => {
     S.fo = await api("PUT", "/api/failover", { settings: st, priority: ed.order });
-    S.foEdit = { settings: { ...S.fo.settings }, order: [...S.fo.order] };
+    S.foEdit = { settings: { ...S.fo.settings }, order: [...(S.fo.order || [])] };
   }, t("foSaved"));
-  const check = () => act(async () => { S.fo = await api("POST", "/api/failover/check"); S.foEdit = { settings: { ...S.fo.settings }, order: [...S.fo.order] }; }, t("foChecked"));
+  const check = () => act(async () => { S.fo = await api("POST", "/api/failover/check"); S.foEdit = { settings: { ...S.fo.settings }, order: [...(S.fo.order || [])] }; }, t("foChecked"));
 
   const row = (name, i) => {
     const hh = health[name] || { name, state: "down", handshake_age: -1 };

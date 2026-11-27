@@ -28,7 +28,11 @@ func (s *Server) failoverView() failoverView {
 	status.Primary = s.cfg.Tunnels.Primary()
 	o := s.cfg.Tunnels.Options()
 	status.Gateway = o.AutoRoute && o.LanIface != ""
-	return failoverView{Status: status, Priority: append([]string{}, st.Priority...), Order: failover.Order(st.Priority, profiles)}
+	if status.Tunnels == nil {
+		status.Tunnels = []failover.Health{}
+	}
+	// Пустые списки отдаём как [], а не null: на свежей установке без профилей интерфейс перебирает их.
+	return failoverView{Status: status, Priority: append([]string{}, st.Priority...), Order: append([]string{}, failover.Order(st.Priority, profiles)...)}
 }
 
 func (s *Server) handleGetFailover(w http.ResponseWriter, _ *http.Request, _ string) {
