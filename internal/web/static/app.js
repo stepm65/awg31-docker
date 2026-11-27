@@ -8,6 +8,26 @@
 const ICONS = {
   route: '<path d="M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M6 15V9a4 4 0 0 1 4-4h6M18 9v6a4 4 0 0 1-4 4H8"/>',
   arrowUp: '<path d="M12 19V5m-6 6 6-6 6 6"/>',
+  dev_pc: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+  dev_laptop: '<rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M3 19h18"/>',
+  dev_phone: '<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 17h2"/>',
+  dev_tablet: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 17h2"/>',
+  dev_tv: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="m9 2 3 3 3-3"/>',
+  dev_console: '<rect x="2.5" y="7" width="19" height="10" rx="5"/><path d="M7 12h3M8.5 10.5v3M15 11h.01M17 13h.01"/>',
+  dev_speaker: '<rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="14" r="3"/><path d="M12 7h.01"/>',
+  dev_nas: '<rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01M7 16.5h.01"/>',
+  dev_printer: '<path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/>',
+  dev_camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  dev_router: '<rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 16.5h.01M11 16.5h.01M17 13V8M14.5 6a3.5 3.5 0 0 1 5 0"/>',
+  dev_wifi: '<path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0"/><path d="M12 19h.01"/>',
+  dev_iot: '<rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/>',
+  dev_other: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.5"/>',
+  devices: '<rect x="2" y="4" width="14" height="10" rx="1.5"/><path d="M6 18h6M9 14v4"/><rect x="16" y="9" width="6" height="11" rx="1.5"/>',
+  wrench: '<path d="M15 4a5 5 0 0 0-4.6 7L4 17.4V20h2.6l6.4-6.4A5 5 0 0 0 20 9l-3 3-3-1-1-3z"/>',
+  download: '<path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/>',
+  upload: '<path d="M12 16V5m-5 5 5-5 5 5M5 20h14"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+  filter: '<path d="M3 5h18l-7 8v6l-4 2v-8z"/>',
   arrowDown: '<path d="M12 5v14m-6-6 6 6 6-6"/>',
   star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
   more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
@@ -56,7 +76,18 @@ const I18N = {
     ago_s: "{n} с назад", ago_m: "{n} мин назад", ago_h: "{n} ч назад", ago_d: "{n} дн назад",
     loading: "Загрузка…", yes: "да", no: "нет", back: "К списку", confirmDelete: "Подтвердить удаление",
     version: "Версия", language: "Язык", close: "Закрыть",
-    navInfra: "ИНФРАСТРУКТУРА", navProfiles: "ПРОФИЛИ", navSystem: "СИСТЕМА",
+    navInfra: "ИНФРАСТРУКТУРА", navProfiles: "ПРОФИЛИ", navSystem: "СИСТЕМА", navDevices: "Устройства",
+    devTitle: "Устройства", devSub: "Имена и адреса устройств LAN: для правил по устройствам и мониторинга.",
+    devListTitle: "Список устройств", devName: "Имя", devAddr: "IP или сеть", devKind: "Тип", devAdd: "Добавить устройство",
+    devFromDhcp: "Из DHCP роутера", devSave: "Сохранить", devSaved: "Устройства сохранены.", devRemove: "Удалить {name}",
+    devEmpty: "Устройств пока нет. Добавьте их вручную или из аренд DHCP роутера.",
+    devHint: "Адрес закрепите на роутере (статическая аренда DHCP): правило по устройству действует, пока у него этот IP. Сеть, например 192.168.1.64/28, объединяет несколько устройств.",
+    devLeasesTitle: "Аренды DHCP роутера", devLeasesHint: "Отметьте устройства и нажмите «Добавить выбранные». Уже добавленные адреса скрыты.",
+    devLeasesAdd: "Добавить выбранные", devLeasesNone: "Новых аренд нет: все адреса уже в списке.", devLeasesStatic: "статическая",
+    devUsed: "в правилах: {n}",
+    devKind_pc: "Компьютер", devKind_laptop: "Ноутбук", devKind_phone: "Телефон", devKind_tablet: "Планшет", devKind_tv: "Телевизор",
+    devKind_console: "Приставка", devKind_speaker: "Колонка", devKind_nas: "NAS", devKind_printer: "Принтер", devKind_camera: "Камера",
+    devKind_router: "Роутер", devKind_wifi: "Точка доступа", devKind_iot: "Умный дом", devKind_other: "Другое",
     navOverview: "Обзор", navAll: "Все профили", navMaint: "Обслуживание",
     // вход и настройка
     loginTitle: "Вход администратора", loginLead: "Управляйте профилями AmneziaWG 3.1, подпиской панели и автозапуском туннелей в одной консоли.",
@@ -152,7 +183,15 @@ const I18N = {
     polSaved: "Правила сохранены.", polSavedWarn: "Правила сохранены, но:",
     polTestTitle: "Проверить", polTestLabel: "Домен или IP-адрес", polTestBtn: "Проверить", polBy: "правило",
     // редактор маршрутов
-    rtAdd: "Добавить сервис", rtSearch: "Поиск по правилам", rtFltAll: "Все", rtFltProxy: "Через VPN", rtFltDirect: "Напрямую", rtFltDrop: "Блок", rtFltOff: "Выключены",
+    rtAdd: "Добавить сервис", rtSearch: "Поиск по правилам", rtFltAll: "Все", rtFltProxy: "Через VPN", rtFltDirect: "Напрямую", rtFltDrop: "Блок", rtFltOff: "Выключены", rtFltDevs: "С устройствами", rtFltExtra: "С портами",
+    rtColDevices: "Устройства", rtAllDevices: "Все устройства", rtNDevices: "{n} устр.", rtDevicesOf: "Устройства правила «{name}»",
+    rtScopeTitle: "Применить к устройствам", rtScopeAll: "Все устройства", rtScopeSearch: "Поиск устройства", rtScopeChosen: "Выбрано: {n}",
+    rtScopeReset: "сбросить", rtScopeNoDevices: "Устройств пока нет: добавьте их на странице «Устройства».", rtScopeGoDevices: "Открыть «Устройства»",
+    rtPorts: "Порты назначения", rtPortsHint: "Например 443 или 27000-27100 через запятую. Пусто — любые.", rtNet: "Протокол",
+    rtNetAny: "Любой", rtNetTcp: "TCP", rtNetUdp: "UDP", rtNetBoth: "TCP и UDP", rtPortsBad: "Порты: число 1–65535 или диапазон, например 8000-8100",
+    rtScopeMixed: "У условий этого правила разные ограничения. После «Готово» у всех будет одно.",
+    rtScopeNote: "Правило с устройствами или портами проверяется раньше общих: для этих устройств оно главнее.",
+    rtScopeEmpty: "Выключите «Все устройства» и выберите хотя бы одно устройство.",
     rtColService: "Сервис", rtColConds: "Условия", rtColDest: "Куда", rtColOn: "Вкл.",
     rtDestProxy: "Через VPN", rtTunnels: "Туннели", rtGroups: "Группы", rtDestDirect: "Напрямую", rtDestDrop: "Блокировать", rtMixed: "Разные", rtGone: "такого нет",
     rtDestOf: "Куда направить: {name}", rtToggleOn: "Включить правило: {name}", rtToggleOff: "Выключить правило: {name}", rtStateOn: "включено", rtStateOff: "выключено",
@@ -161,7 +200,7 @@ const I18N = {
     rtMore: "ещё {n}", rtCustom: "Свои правила ({n})", rtEmpty: "Без условий", rtNoCond: "нет условий",
     rtNoRules: "Правил пока нет", rtNoRulesHint: "Добавьте сервис: например, YouTube через VPN, а российские адреса напрямую.",
     rtNoMatch: "Ничего не найдено", rtNoMatchHint: "Измените поиск или фильтр.",
-    rtOrderHint: "Порядок важен: для доменов побеждает первое совпавшее правило (сверху вниз), для адресов — самая точная сеть. Всё остальное идёт по правилу «Остальной трафик».",
+    rtOrderHint: "Порядок важен: для доменов побеждает первое совпавшее правило (сверху вниз), для адресов — самая точная сеть. Правила с устройствами или портами проверяются раньше общих. Всё остальное идёт по правилу «Остальной трафик».",
     rtBadLines: "Движок не понимает строк: {n}. Пока они есть, правила не сохранятся: исправьте их в тексте или удалите.", rtBadShow: "Показать текст", rtBadDrop: "Удалить эти строки",
     rtOffCond: "выключено", rtMissing: "категории нет в загруженных базах",
     rtUnsaved: "Есть несохранённые изменения", rtRevert: "Отменить", rtReverted: "Изменения отменены.",
@@ -233,7 +272,18 @@ const I18N = {
     ago_s: "{n}s ago", ago_m: "{n}m ago", ago_h: "{n}h ago", ago_d: "{n}d ago",
     loading: "Loading…", yes: "yes", no: "no", back: "Back to list", confirmDelete: "Confirm deletion",
     version: "Version", language: "Language", close: "Close",
-    navInfra: "INFRASTRUCTURE", navProfiles: "PROFILES", navSystem: "SYSTEM",
+    navInfra: "INFRASTRUCTURE", navProfiles: "PROFILES", navSystem: "SYSTEM", navDevices: "Devices",
+    devTitle: "Devices", devSub: "Names and addresses of LAN devices: for per-device rules and monitoring.",
+    devListTitle: "Device list", devName: "Name", devAddr: "IP or network", devKind: "Type", devAdd: "Add device",
+    devFromDhcp: "From router DHCP", devSave: "Save", devSaved: "Devices saved.", devRemove: "Remove {name}",
+    devEmpty: "No devices yet. Add them by hand or from the router's DHCP leases.",
+    devHint: "Pin the address on the router (static DHCP lease): a per-device rule works while the device has this IP. A network such as 192.168.1.64/28 groups several devices.",
+    devLeasesTitle: "Router DHCP leases", devLeasesHint: "Tick devices and press \"Add selected\". Addresses already in the list are hidden.",
+    devLeasesAdd: "Add selected", devLeasesNone: "No new leases: every address is already in the list.", devLeasesStatic: "static",
+    devUsed: "in rules: {n}",
+    devKind_pc: "Computer", devKind_laptop: "Laptop", devKind_phone: "Phone", devKind_tablet: "Tablet", devKind_tv: "TV",
+    devKind_console: "Console", devKind_speaker: "Speaker", devKind_nas: "NAS", devKind_printer: "Printer", devKind_camera: "Camera",
+    devKind_router: "Router", devKind_wifi: "Access point", devKind_iot: "Smart home", devKind_other: "Other",
     navOverview: "Overview", navAll: "All profiles", navMaint: "Maintenance",
     loginTitle: "Administrator login", loginLead: "Manage AmneziaWG 3.1 profiles, the panel subscription and tunnel autostart from one console.",
     f1: "Profiles from .conf and autostart after a reboot", f2: "Subscription from your panel over HTTPS", f3: "Strict config and TLS validation",
@@ -321,7 +371,15 @@ const I18N = {
     polSaved: "Rules saved.", polSavedWarn: "Rules saved, but:",
     polTestTitle: "Test", polTestLabel: "Domain or IP address", polTestBtn: "Test", polBy: "rule",
     // routing editor
-    rtAdd: "Add service", rtSearch: "Search rules", rtFltAll: "All", rtFltProxy: "Via VPN", rtFltDirect: "Direct", rtFltDrop: "Blocked", rtFltOff: "Off",
+    rtAdd: "Add service", rtSearch: "Search rules", rtFltAll: "All", rtFltProxy: "Via VPN", rtFltDirect: "Direct", rtFltDrop: "Blocked", rtFltOff: "Off", rtFltDevs: "With devices", rtFltExtra: "With ports",
+    rtColDevices: "Devices", rtAllDevices: "All devices", rtNDevices: "{n} dev.", rtDevicesOf: "Devices of rule \"{name}\"",
+    rtScopeTitle: "Apply to devices", rtScopeAll: "All devices", rtScopeSearch: "Find a device", rtScopeChosen: "Selected: {n}",
+    rtScopeReset: "reset", rtScopeNoDevices: "No devices yet: add them on the \"Devices\" page.", rtScopeGoDevices: "Open \"Devices\"",
+    rtPorts: "Destination ports", rtPortsHint: "For example 443 or 27000-27100, comma-separated. Empty — any.", rtNet: "Protocol",
+    rtNetAny: "Any", rtNetTcp: "TCP", rtNetUdp: "UDP", rtNetBoth: "TCP and UDP", rtPortsBad: "Ports: a number 1–65535 or a range such as 8000-8100",
+    rtScopeMixed: "The conditions of this rule have different limits. After \"Done\" they all get one.",
+    rtScopeNote: "A rule with devices or ports is checked before general rules: for these devices it wins.",
+    rtScopeEmpty: "Turn off \"All devices\" and pick at least one device.",
     rtColService: "Service", rtColConds: "Conditions", rtColDest: "Goes to", rtColOn: "On",
     rtDestProxy: "Via VPN", rtTunnels: "Tunnels", rtGroups: "Groups", rtDestDirect: "Direct", rtDestDrop: "Block", rtMixed: "Mixed", rtGone: "not found",
     rtDestOf: "Send to: {name}", rtToggleOn: "Turn on rule: {name}", rtToggleOff: "Turn off rule: {name}", rtStateOn: "on", rtStateOff: "off",
@@ -330,7 +388,7 @@ const I18N = {
     rtMore: "{n} more", rtCustom: "Custom rules ({n})", rtEmpty: "No conditions", rtNoCond: "no conditions",
     rtNoRules: "No rules yet", rtNoRulesHint: "Add a service: for example YouTube through the VPN and Russian addresses direct.",
     rtNoMatch: "Nothing found", rtNoMatchHint: "Change the search or the filter.",
-    rtOrderHint: "Order matters: for domains the first matching rule wins (top to bottom), for addresses the most specific network. Everything else follows the \"Everything else\" setting.",
+    rtOrderHint: "Order matters: for domains the first matching rule wins (top to bottom), for addresses the most specific network. Rules with devices or ports are checked before general ones. Everything else follows the \"Everything else\" setting.",
     rtBadLines: "The engine does not understand {n} lines. The rules will not save while they are there: fix them in the text or delete them.", rtBadShow: "Show the text", rtBadDrop: "Delete these lines",
     rtOffCond: "off", rtMissing: "category is not in the loaded databases",
     rtUnsaved: "You have unsaved changes", rtRevert: "Discard", rtReverted: "Changes discarded.",
@@ -530,6 +588,7 @@ function parseRoute() {
   if (parts[0] === "policy") return { page: "policy" };
   if (parts[0] === "groups") return { page: "groups" };
   if (parts[0] === "router") return { page: "router" };
+  if (parts[0] === "devices") return { page: "devices" };
   if (parts[0] === "p" && parts[1]) return { page: "profile", name: parts[1], tab: ["config", "sub"].includes(parts[2]) ? parts[2] : "overview" };
   return { page: "overview" };
 }
@@ -543,6 +602,7 @@ window.addEventListener("hashchange", () => {
   if (S.route.page === "groups") { S.grpEdit = null; S.grpWarn = null; loadGroups(true); }
   if (S.route.page === "policy") { S.polEdit = null; S.polTest = null; loadPolicy(true); }
   if (S.route.page === "router") { S.rosEdit = null; loadRouter(true); }
+  if (S.route.page === "devices") { S.devEdit = null; S.leases = null; loadDevices(true); }
   if (S.auth && S.auth.authenticated) { renderSide(); renderMain(); }
 });
 document.addEventListener("input", (e) => { if (e.target.closest && e.target.closest("#main form") && !e.target.closest("[data-nodirty]")) S.dirty = true; });
@@ -646,6 +706,7 @@ function renderSide() {
     link("failover", "layers", t("navFailover"), "/failover"),
     link("groups", "merge", t("navGroups"), "/groups"),
     link("policy", "route", t("navPolicy"), "/policy"),
+    link("devices", "devices", t("navDevices"), "/devices"),
     h("div", { class: "side-title side-group" }, h("span", {}, t("navProfiles")), h("span", { class: "badge" }, String(list.length))),
     list.map((p) => h("a", { class: "side-inst", href: "#/p/" + encodeURIComponent(p.name), "aria-current": r.page === "profile" && r.name === p.name ? "page" : null, title: p.name },
       sideDot(p),
@@ -662,7 +723,7 @@ function renderMain() {
   const r = S.route;
   const page = r.page === "profiles" ? pageProfiles() : r.page === "profile" ? pageProfile(r)
     : r.page === "new" ? pageNew() : r.page === "maintenance" ? pageMaintenance()
-    : r.page === "failover" ? pageFailover() : r.page === "groups" ? pageGroups() : r.page === "policy" ? pagePolicy() : r.page === "router" ? pageRouter() : pageOverview();
+    : r.page === "failover" ? pageFailover() : r.page === "groups" ? pageGroups() : r.page === "policy" ? pagePolicy() : r.page === "router" ? pageRouter() : r.page === "devices" ? pageDevices() : pageOverview();
   mainEl.replaceChildren(h("div", { id: "flash-slot" }, flashBox()), page);
 }
 
@@ -1447,6 +1508,32 @@ function rtDestOptions(cur) {
 }
 const rtDestClass = (d) => (d === "DIRECT" ? "direct" : d === "DROP" ? "drop" : d === "mixed" ? "mixed" : "proxy");
 
+// Устройства из справочника по ссылкам правила (@id); сырые адреса — как есть.
+function devByRef(ref) {
+  const id = String(ref).replace(/^@/, "");
+  return ((S.dev && S.dev.devices) || []).find((d) => d.id === id) || null;
+}
+function scopeDevs(sc) {
+  return (sc ? sc.src : []).map((r) => { const d = r.charAt(0) === "@" ? devByRef(r) : null; return d ? { name: d.name, addr: d.addr, kind: d.kind } : { name: r.charAt(0) === "@" ? r : r, addr: r.charAt(0) === "@" ? "?" : r, kind: "other", missing: r.charAt(0) === "@" }; });
+}
+function rtDevicesCell(b, info) {
+  const sc = RULES.scope(b);
+  if (!sc || !sc.src.length) return h("span", { class: "rt-alldev" }, icon("devices", 15), t("rtAllDevices"));
+  const list = scopeDevs(sc);
+  return h("details", { class: "rt-devpop" },
+    h("summary", { "aria-label": t("rtDevicesOf", { name: info.name }) }, icon("devices", 15), list.length === 1 ? list[0].name : t("rtNDevices", { n: list.length }), icon("chevron", 14)),
+    h("div", { class: "rt-devpop-list" }, h("b", {}, t("rtColDevices") + " · " + list.length),
+      list.map((d) => h("div", { class: "rt-devpop-item" + (d.missing ? " is-missing" : "") }, devIcon(d.kind, 15), h("span", {}, d.name), h("span", { class: "mono" }, d.addr)))));
+}
+function rtScopeChips(b) {
+  const sc = RULES.scope(b);
+  if (!sc) return [];
+  const out = [];
+  if (sc.ports.length) out.push(h("span", { class: "rt-chip k-port" }, h("i", {}, "port"), sc.ports.join(", ")));
+  if (sc.net.length) out.push(h("span", { class: "rt-chip k-net" }, h("i", {}, "net"), sc.net.join(",")));
+  return out;
+}
+
 function rtCondChip(c, g) {
   const loaded = c.kind === "geosite" ? (g.site_loaded || {})[c.value] : c.kind === "geoip" ? (g.ip_loaded || {})[c.value] : undefined;
   const miss = (g.missing || []).includes(c.key);
@@ -1568,7 +1655,9 @@ function rtRow(b, pos, total, locked, g) {
     grip,
     h("div", { class: "rt-svc" }, rtTile(info), h("div", { class: "rt-name" }, h("b", {}, info.name), h("span", {}, conds.length ? t("rtColConds") + ": " + conds.length : t("rtNoCond")))),
     h("div", { class: "rt-conds" }, conds.slice(0, MAX).map((c) => rtCondChip(c, g)),
-      conds.length > MAX && h("button", { type: "button", class: "rt-chip rt-more", onclick: () => rtDialog(b) }, t("rtMore", { n: conds.length - MAX }))),
+      conds.length > MAX && h("button", { type: "button", class: "rt-chip rt-more", onclick: () => rtDialog(b) }, t("rtMore", { n: conds.length - MAX })),
+      rtScopeChips(b)),
+    h("div", { class: "rt-dev" }, rtDevicesCell(b, info)),
     h("div", { class: "rt-to" }, sel),
     h("div", { class: "rt-on" }, sw),
     h("div", { class: "rt-menu" }, rtMenu(b, pos, total, locked)));
@@ -1579,14 +1668,16 @@ function rtDraw(fk) {
   const R = S.rt, m = R.model, all = RULES.blocks(m), g = (S.pol && S.pol.geo) || {};
   if (!rtEls.list) return;
   const q = R.q.trim().toLowerCase();
-  const tests = { all: () => true, proxy: (b) => rtDestClass(RULES.dest(b)) === "proxy", direct: (b) => RULES.dest(b) === "DIRECT", drop: (b) => RULES.dest(b) === "DROP", off: (b) => RULES.isOff(b) };
+  const tests = { all: () => true, proxy: (b) => rtDestClass(RULES.dest(b)) === "proxy", direct: (b) => RULES.dest(b) === "DIRECT", drop: (b) => RULES.dest(b) === "DROP",
+    devs: (b) => { const sc = RULES.scope(b); return !sc || sc.src.length > 0; }, extra: (b) => { const sc = RULES.scope(b); return !sc || sc.ports.length > 0 || sc.net.length > 0; }, off: (b) => RULES.isOff(b) };
+  const TILE_ICON = { all: "layers", proxy: "shield", direct: "arrow", drop: "x", devs: "devices", extra: "filter", off: "pause" };
   const match = (b) => { if (!q) return true; const i = rtInfo(b); return i.name.toLowerCase().includes(q) || i.conds.some((c) => c.key.includes(q)); };
   const shown = all.filter((b) => tests[R.filter](b) && match(b));
   const locked = R.filter !== "all" || q !== "";
 
-  rtEls.chips.replaceChildren(...["all", "proxy", "direct", "drop", "off"].map((k) => h("button", { class: "filter-chip", type: "button", "aria-pressed": String(R.filter === k),
+  rtEls.chips.replaceChildren(...["all", "proxy", "direct", "drop", "devs", "extra", "off"].map((k) => h("button", { class: "rt-tile t-" + k, type: "button", "aria-pressed": String(R.filter === k),
     onclick: () => { R.filter = k; rtDraw(); announce(t("shownOf", { n: all.filter((b) => tests[k](b) && match(b)).length, m: all.length }) + (k === "all" ? "" : " · " + t("rtFlt" + k[0].toUpperCase() + k.slice(1)))); } },
-  t("rtFlt" + k[0].toUpperCase() + k.slice(1)), h("b", {}, String(all.filter(tests[k]).length)))));
+  h("span", { class: "rt-tile-ic" }, icon(TILE_ICON[k], 18)), h("span", { class: "rt-tile-l" }, t("rtFlt" + k[0].toUpperCase() + k.slice(1))), h("b", {}, String(all.filter(tests[k]).length)))));
 
   const bad = RULES.bad(m);
   rtEls.notes.replaceChildren(...(bad.length ? [h("div", { class: "flash warn rt-bad", role: "status" }, icon("alert", 18),
@@ -1742,10 +1833,67 @@ function rtDialog(b) {
 
   const destSel = h("select", { id: "rt-dest", onchange: (e) => { ui.dest = e.target.value; } }, rtDestOptions(ui.dest));
 
+  // сужение: устройства, порты, протокол (одно на всё правило)
+  const sc0 = b ? RULES.scope(b) : { src: [], ports: [], net: [] };
+  const scMixed = !sc0;
+  const sc = sc0 || (b && b.lines[0] ? { src: b.lines[0].src.slice(), ports: b.lines[0].ports.slice(), net: b.lines[0].net.slice() } : { src: [], ports: [], net: [] });
+  ui.scope = { src: sc.src.slice(), ports: sc.ports.slice(), net: sc.net.slice() };
+  ui.allDevs = !ui.scope.src.length;
+  const devs = (S.dev && S.dev.devices) || [];
+  const devBox = h("div", { class: "rt-scope-devs" });
+  const devFind = h("input", { type: "search", "aria-label": t("rtScopeSearch"), placeholder: t("rtScopeSearch"), autocomplete: "off", oninput: () => drawDevs() });
+  const allSw = h("button", { type: "button", class: "rt-switch", role: "switch", "aria-checked": String(ui.allDevs), "aria-label": t("rtScopeAll"),
+    onclick: () => { ui.allDevs = !ui.allDevs; allSw.setAttribute("aria-checked", String(ui.allDevs)); if (ui.allDevs) ui.scope.src = []; drawDevs(); showErr(""); } },
+  h("span", { class: "rt-knob" }));
+  function drawDevs() {
+    if (ui.allDevs) { devBox.replaceChildren(); devBox.hidden = true; return; }
+    devBox.hidden = false;
+    if (!devs.length && !ui.scope.src.length) {
+      devBox.replaceChildren(h("p", { class: "hint" }, t("rtScopeNoDevices"), " ", h("a", { href: "#/devices", onclick: () => close() }, t("rtScopeGoDevices"))));
+      return;
+    }
+    const q = devFind.value.trim().toLowerCase();
+    const raw = ui.scope.src.filter((r) => r.charAt(0) !== "@" || !devByRef(r));
+    const items = devs.map((d) => ({ ref: "@" + d.id, name: d.name, addr: d.addr, kind: d.kind })).concat(raw.map((r) => ({ ref: r, name: r, addr: r.charAt(0) === "@" ? "?" : "", kind: "other" })));
+    const toggle = (ref, on) => { ui.scope.src = ui.scope.src.filter((x) => x !== ref); if (on) ui.scope.src.push(ref); drawDevs(); showErr(""); };
+    const chosen = ui.scope.src.map((r) => items.find((i) => i.ref === r)).filter(Boolean);
+    devBox.replaceChildren(
+      chosen.length ? h("div", { class: "rt-scope-chosen" }, chosen.map((i) => h("span", { class: "rt-chip rt-devchip" }, devIcon(i.kind, 14), i.name,
+        h("button", { type: "button", class: "chip-x", "aria-label": t("devRemove", { name: i.name }), onclick: () => toggle(i.ref, false) }, icon("x", 12))))) : null,
+      h("div", { class: "rt-scope-grid" },
+        h("div", {}, h("div", { class: "field" }, devFind),
+          h("ul", { class: "rt-scope-list" }, items.filter((i) => !q || (i.name + " " + i.addr).toLowerCase().includes(q)).map((i) => {
+            const on = ui.scope.src.includes(i.ref);
+            return h("li", {}, h("label", { class: on ? "is-on" : "" },
+              h("input", { type: "checkbox", checked: on, onchange: (e) => toggle(i.ref, e.target.checked) }),
+              devIcon(i.kind, 16), h("span", { class: "nm" }, i.name), h("span", { class: "mono ad" }, i.addr)));
+          }))),
+        h("p", { class: "hint rt-scope-count" }, t("rtScopeChosen", { n: ui.scope.src.length }), " · ",
+          h("button", { type: "button", class: "linklike", onclick: () => { ui.scope.src = []; drawDevs(); } }, t("rtScopeReset")))));
+  }
+  const portsInp = h("input", { id: "rt-ports", type: "text", class: "mono", value: ui.scope.ports.join(", "), placeholder: "443, 27000-27100", autocomplete: "off", spellcheck: "false",
+    oninput: () => showErr("") });
+  const netKey = (n) => (n.length === 2 ? "both" : n[0] || "any");
+  const netSel = h("select", { id: "rt-net" }, ["any", "tcp", "udp", "both"].map((k) => h("option", { value: k, selected: netKey(ui.scope.net) === k }, t("rtNet" + k[0].toUpperCase() + k.slice(1)))));
+  const readScope = () => {
+    const ports = portsInp.value.split(/[\s,;]+/).filter(Boolean);
+    for (const p of ports) {
+      const m = /^(\d{1,5})(?:-(\d{1,5}))?$/.exec(p);
+      if (!m || +m[1] < 1 || +(m[2] || m[1]) > 65535 || +m[1] > +(m[2] || m[1])) { showErr(t("rtPortsBad")); portsInp.focus(); return null; }
+    }
+    if (!ui.allDevs && !ui.scope.src.length) { showErr(t("rtScopeEmpty")); return null; }
+    const nv = netSel.value;
+    return { src: ui.allDevs ? [] : ui.scope.src.slice(), ports, net: nv === "any" ? [] : nv === "both" ? ["tcp", "udp"] : [nv] };
+  };
+
   const commit = () => {
     if (!RULES.conds(draft).length) { showErr(t("rtCondNeed")); valInp.focus(); return; }
     if (valInp.value.trim()) { addConds(); if (!err.hidden) return; }
+    const nsc = readScope();
+    if (!nsc) return;
     if (ui.dest !== "mixed" && (isNew || ui.dest !== RULES.dest(b))) RULES.setDest(draft, ui.dest);
+    const tmp = { lines: [{ src: nsc.src, ports: nsc.ports, net: nsc.net }] };
+    if (scMixed || RULES.modsText(tmp.lines[0]) !== RULES.modsText(sc)) RULES.setScope(draft, nsc);
     const name = draft.name.trim() || rtInfo({ ...draft, name: "" }).name;
     let target;
     if (isNew) {
@@ -1774,12 +1922,20 @@ function rtDialog(b) {
           h("button", { type: "button", class: "btn btn-secondary", onclick: addConds }, icon("plus", 16), t("rtCondAdd"))),
         h("p", { class: "hint" }, t("rtCondHint")),
         err,
-        h("div", { class: "field" }, h("label", { for: "rt-dest" }, t("rtDest")), destSel))),
+        h("div", { class: "field" }, h("label", { for: "rt-dest" }, t("rtDest")), destSel),
+        h("div", { class: "rt-scope" },
+          h("div", { class: "rt-scope-head" }, h("h3", {}, t("rtScopeTitle")), h("span", { class: "rt-scope-all" }, t("rtScopeAll"), allSw)),
+          scMixed && h("p", { class: "hint" }, t("rtScopeMixed")),
+          devBox,
+          h("div", { class: "rt-scope-extra" },
+            h("div", { class: "field" }, h("label", { for: "rt-ports" }, t("rtPorts")), portsInp, h("div", { class: "hint" }, t("rtPortsHint"))),
+            h("div", { class: "field" }, h("label", { for: "rt-net" }, t("rtNet")), netSel)),
+          h("p", { class: "hint" }, t("rtScopeNote"))))),
     h("footer", { class: "actions" },
       h("button", { type: "button", class: "btn btn-secondary", onclick: close }, t("rtCancel")),
       h("button", { type: "submit", class: "btn btn-primary" }, icon("check", 16), t("rtDone")))));
   document.body.append(dlg);
-  drawConds(); drawTile();
+  drawConds(); drawTile(); drawDevs();
   dlg.showModal();
   if (window.matchMedia("(pointer: fine)").matches) (isNew ? find : nameInp).focus();
 }
@@ -1801,6 +1957,7 @@ async function loadPolicy(quiet) {
     if (!quiet) { say("error", e.message); renderFlash(); }
   }
   if (first || !S.grp) try { S.grp = await api("GET", "/api/groups"); } catch (_) { /* группы нужны только для списка «Куда» */ }
+  if (first || !S.dev) try { S.dev = await api("GET", "/api/devices"); } catch (_) { /* устройства нужны только для правил по устройствам */ }
   if (S.route.page === "policy" && !S.dirty && !S.busy && !rtTyping() && !rtDialogOpen()) renderMain();
 }
 
@@ -1831,7 +1988,7 @@ function pagePolicy() {
     onclick: (e) => { ed.enabled = !ed.enabled; e.currentTarget.setAttribute("aria-checked", String(!!ed.enabled)); dirty(); } }, h("span", { class: "rt-knob" }), h("span", { class: "sr-only" }, t("polEnable")));
   const search = h("input", { id: "rt-q", type: "search", "data-keep": "", placeholder: t("rtSearch"), "aria-label": t("rtSearch"), autocomplete: "off", value: R.q,
     oninput: (e) => { R.q = e.target.value; rtDraw(); clearTimeout(rtSayTimer); rtSayTimer = setTimeout(() => announce(t("shownOf", { n: rtEls.list.querySelectorAll(".rt-row").length, m: RULES.blocks(R.model).length })), 500); } });
-  rtEls.chips = h("div", { class: "filter-chips" });
+  rtEls.chips = h("div", { class: "rt-tiles", role: "group", "aria-label": t("rtSearch") });
   rtEls.notes = h("div", { class: "rt-notes" });
   rtEls.list = h("ol", { class: "rt-list", role: "list" });
   rtEls.bar = h("div", { class: "save-bar", hidden: !S.dirty });
@@ -1856,9 +2013,10 @@ function pagePolicy() {
         h("div", { class: "field" }, h("label", { for: "pol-def" }, t("polDefault")),
           h("select", { id: "pol-def", "data-keep": "", onchange: (e) => { ed.default_action = e.target.value; dirty(); } },
             ["proxy", "direct"].map((o) => h("option", { value: o, selected: ed.default_action === o }, actName(o)))))),
-      h("div", { class: "rt-tools" }, h("div", { class: "field" }, search), rtEls.chips),
+      rtEls.chips,
+      h("div", { class: "rt-tools" }, h("div", { class: "field" }, search)),
       rtEls.notes,
-      h("div", { class: "rt-head", "aria-hidden": "true" }, h("span", {}), h("span", {}, t("rtColService")), h("span", {}, t("rtColConds")), h("span", {}, t("rtColDest")), h("span", {}, t("rtColOn")), h("span", {})),
+      h("div", { class: "rt-head", "aria-hidden": "true" }, h("span", {}), h("span", {}, t("rtColService")), h("span", {}, t("rtColConds")), h("span", {}, t("rtColDevices")), h("span", {}, t("rtColDest")), h("span", {}, t("rtColOn")), h("span", {})),
       rtEls.list,
       h("p", { class: "hint rt-order" }, t("rtOrderHint")),
       h("details", { class: "rt-adv", open: R.adv, ontoggle: (e) => { R.adv = e.currentTarget.open; } },
@@ -1918,6 +2076,85 @@ function pagePolicy() {
   drawPresetNote();
   rtDraw(); rtBar();
   return page;
+}
+
+/* ---------- устройства ---------- */
+const DEV_KINDS = ["pc", "laptop", "phone", "tablet", "tv", "console", "speaker", "nas", "printer", "camera", "router", "wifi", "iot", "other"];
+const devIcon = (kind, size = 18) => icon("dev_" + (DEV_KINDS.includes(kind) ? kind : "other"), size);
+// Тип по имени из DHCP: только догадка, его можно поменять.
+function guessKind(name) {
+  const n = String(name || "").toLowerCase();
+  const rules = [[/iphone|galaxy|pixel|redmi|xiaomi|phone|android|honor|huawei|poco/, "phone"], [/ipad|tab\b|tablet|pad/, "tablet"],
+    [/macbook|book|laptop|notebook|thinkpad/, "laptop"], [/tv|bravia|webos|tizen|chromecast|android-tv/, "tv"], [/station|alice|homepod|echo|speaker|sonos/, "speaker"],
+    [/nas|synology|qnap|truenas/, "nas"], [/print|epson|canon|brother|hp-/, "printer"], [/cam|ipc|dahua|hikvision/, "camera"],
+    [/playstation|ps[345]|xbox|switch|deck/, "console"], [/mikrotik|keenetic|router|gateway/, "router"], [/ap\b|access|unifi|wifi|wi-fi/, "wifi"],
+    [/esp|tuya|sonoff|yeelight|vacuum|ecovacs|roborock|plug|sensor/, "iot"], [/pc|desktop|win|imac|mac/, "pc"]];
+  for (const [re, k] of rules) if (re.test(n)) return k;
+  return "other";
+}
+async function loadDevices(quiet) {
+  try {
+    S.dev = await api("GET", "/api/devices");
+    if (!S.devEdit || !S.dirty) S.devEdit = S.dev.devices.map((d) => ({ ...d }));
+  } catch (e) {
+    if (!quiet) { say("error", e.message); renderFlash(); }
+  }
+  if (S.route.page === "devices" && !S.dirty && !S.busy) renderMain();
+}
+// Сколько правил ссылается на устройство (по тексту правил, если он уже загружен).
+function devRefCount(id) {
+  const txt = (S.pol && S.pol.settings && S.pol.settings.rules) || "";
+  const re = new RegExp("src=[^\\s]*@" + id.replace(/[-]/g, "\\-") + "(?![a-z0-9_-])", "g");
+  return (txt.match(re) || []).length;
+}
+function pageDevices() {
+  if (!S.dev || !S.devEdit) { loadDevices(); return h("div", {}, heading(t("navInfra"), t("devTitle")), h("div", { class: "loading" }, t("loading"))); }
+  if (!S.pol) loadPolicy(true);
+  const ed = S.devEdit;
+  const dirty = () => { S.dirty = true; };
+  const save = () => act(async () => {
+    S.dev = await api("PUT", "/api/devices", { devices: ed });
+    S.devEdit = S.dev.devices.map((d) => ({ ...d }));
+  }, t("devSaved"));
+  const leases = () => act(async () => { S.leases = (await api("GET", "/api/devices/leases")).leases || []; S.leasePick = {}; });
+  const row = (d, i) => h("tr", {},
+    h("td", { class: "dev-kind" }, h("label", { class: "dev-kind-sel" }, devIcon(d.kind, 18),
+      h("select", { "aria-label": t("devKind") + ": " + (d.name || d.addr), onchange: (e) => { d.kind = e.target.value; dirty(); renderMain(); } },
+        DEV_KINDS.map((k) => h("option", { value: k, selected: d.kind === k }, t("devKind_" + k)))))),
+    h("td", {}, h("input", { type: "text", value: d.name || "", maxlength: "40", "aria-label": t("devName"), placeholder: t("devName"), oninput: (e) => { d.name = e.target.value; dirty(); } })),
+    h("td", {}, h("input", { type: "text", class: "mono", value: d.addr || "", "aria-label": t("devAddr"), placeholder: "192.168.1.10", spellcheck: "false", oninput: (e) => { d.addr = e.target.value; dirty(); } })),
+    h("td", { class: "dev-used" }, d.id && devRefCount(d.id) ? h("span", { class: "pill pill-idle" }, t("devUsed", { n: devRefCount(d.id) })) : ""),
+    h("td", { class: "dev-act" }, h("button", { type: "button", class: "icon-btn", "aria-label": t("devRemove", { name: d.name || d.addr || "" }), title: t("delete"),
+      onclick: () => { ed.splice(i, 1); dirty(); renderMain(); } }, icon("trash", 16))));
+  const have = new Set(ed.map((d) => String(d.addr).trim()));
+  const fresh = (S.leases || []).filter((l) => !have.has(l.addr));
+  const leaseCard = S.leases && h("div", { class: "card" }, h("h2", {}, t("devLeasesTitle")),
+    fresh.length ? [h("p", { class: "hint" }, t("devLeasesHint")),
+      h("div", { class: "table-scroll" }, h("table", { class: "dev-leases" }, h("tbody", {}, fresh.map((l) => {
+        const name = l.comment || l.host_name || l.addr;
+        return h("tr", {},
+          h("td", {}, h("input", { type: "checkbox", "data-nodirty": "", "aria-label": name, checked: !!S.leasePick[l.addr], onchange: (e) => { S.leasePick[l.addr] = e.target.checked; } })),
+          h("td", {}, devIcon(guessKind(name), 16)), h("td", {}, name), h("td", { class: "mono" }, l.addr), h("td", { class: "mono muted" }, l.mac || ""),
+          h("td", {}, l.dynamic ? "" : h("span", { class: "pill pill-on" }, t("devLeasesStatic"))));
+      })))),
+      h("div", { class: "actions" }, h("button", { class: "btn btn-secondary", type: "button", onclick: () => {
+        for (const l of fresh) if (S.leasePick[l.addr]) { const name = (l.comment || l.host_name || l.addr).slice(0, 40); ed.push({ id: "", name, addr: l.addr, kind: guessKind(name) }); }
+        S.leases = null; dirty(); renderMain();
+      } }, icon("plus", 16), t("devLeasesAdd")))]
+      : h("p", { class: "hint" }, t("devLeasesNone")));
+  return h("div", {},
+    heading(t("navInfra"), t("devTitle"), t("devSub")),
+    h("div", { class: "card" },
+      h("div", { class: "heading-row" }, h("h2", {}, t("devListTitle")),
+        h("div", { class: "actions" },
+          h("button", { class: "btn btn-secondary", type: "button", disabled: S.busy, onclick: leases }, icon("download", 16), t("devFromDhcp")),
+          h("button", { class: "btn btn-primary", type: "button", onclick: () => { ed.push({ id: "", name: "", addr: "", kind: "pc" }); dirty(); renderMain(); setTimeout(() => { const ins = document.querySelectorAll(".dev-table tbody tr:last-child input"); if (ins[0]) ins[0].focus(); }); } }, icon("plus", 16), t("devAdd")))),
+      ed.length ? h("div", { class: "table-scroll" }, h("table", { class: "dev-table" },
+        h("thead", {}, h("tr", {}, h("th", { scope: "col" }, t("devKind")), h("th", { scope: "col" }, t("devName")), h("th", { scope: "col" }, t("devAddr")), h("th", {}), h("th", {}))),
+        h("tbody", {}, ed.map(row)))) : h("p", { class: "hint" }, t("devEmpty")),
+      h("p", { class: "info-line" }, icon("info", 16), h("span", {}, t("devHint"))),
+      h("div", { class: "actions" }, h("button", { class: "btn btn-primary", type: "button", disabled: S.busy, onclick: save }, icon("check", 16), t("devSave")))),
+    leaseCard);
 }
 
 /* ---------- интеграция с RouterOS ---------- */

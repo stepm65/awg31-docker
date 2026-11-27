@@ -56,24 +56,63 @@
     return { kind: "domain", value: normHost(c) };
   }
 
-  // Одна строка правила, как её понимает движок: «ДЕЙСТВИЕ УСЛОВИЕ [# заметка]» или «ДЕЙСТВИЕ,УСЛОВИЕ[,…]».
+  // Уточнения после условия (как в движке): src=@устройство,IP port=443,8000-8100 net=tcp,udp.
+  function parseMods(fields) {
+    var sc = { src: [], ports: [], net: [] }, seen = {};
+    for (var i = 0; i < fields.length; i++) {
+      var m = /^([a-z]+)=(.+)$/i.exec(fields[i]);
+      if (!m) return null;
+      var k = m[1].toLowerCase(), items = m[2].split(",");
+      if (k === "dport") k = "port";
+      if (k === "network" || k === "proto") k = "net";
+      if (seen[k]) return null;
+      seen[k] = 1;
+      for (var j = 0; j < items.length; j++) {
+        var it = items[j].trim().toLowerCase();
+        if (k === "src") {
+          if (!/^@[a-z0-9][a-z0-9_-]{0,31}$/.test(it) && !/^[0-9a-f:.]+(\/\d{1,3})?$/.test(it)) return null;
+          sc.src.push(it);
+        } else if (k === "port") {
+          var pm = /^(\d{1,5})(?:-(\d{1,5}))?$/.exec(it);
+          if (!pm || +pm[1] < 1 || +(pm[2] || pm[1]) > 65535 || +pm[1] > +(pm[2] || pm[1])) return null;
+          sc.ports.push(it);
+        } else if (k === "net") {
+          if (it !== "tcp" && it !== "udp") return null;
+          if (sc.net.indexOf(it) < 0) sc.net.push(it);
+        } else return null;
+      }
+    }
+    sc.net.sort();
+    return sc;
+  }
+  function modsText(l) {
+    var s = "";
+    if (l.src && l.src.length) s += " src=" + l.src.join(",");
+    if (l.ports && l.ports.length) s += " port=" + l.ports.join(",");
+    if (l.net && l.net.length) s += " net=" + l.net.join(",");
+    return s;
+  }
+
+  // Одна строка правила, как её понимает движок: «ДЕЙСТВИЕ УСЛОВИЕ [уточнения] [# заметка]» или «ДЕЙСТВИЕ,УСЛОВИЕ[,…]».
   function parseLine(s) {
     var hash = s.indexOf("#");
     var body = (hash < 0 ? s : s.slice(0, hash)).trim();
     var note = hash < 0 ? "" : s.slice(hash + 1).trim();
     if (!body) return null;
-    var act, cond;
-    if (body.indexOf(",") >= 0) {
+    var act, cond, sc = { src: [], ports: [], net: [] };
+    var f = body.split(/\s+/);
+    if (f[0].indexOf(",") >= 0) {
       var p = body.split(",");
       act = p[0].trim(); cond = (p[1] || "").trim();
     } else {
-      var f = body.split(/\s+/);
       act = f[0]; cond = f[1] || "";
+      if (f.length > 2) { sc = parseMods(f.slice(2)); if (!sc) return null; }
     }
     var a = parseAction(act);
     if (!a || !cond) return null;
     var c = parseCond(cond);
-    return { act: a.act, target: a.target, kind: c.kind, value: c.value, off: false, offPre: null, note: note, raw: null, pre: [] };
+    return { act: a.act, target: a.target, kind: c.kind, value: c.value, src: sc.src, ports: sc.ports, net: sc.net,
+      off: false, offPre: null, note: note, raw: null, pre: [] };
   }
 
   var destKey = function (l) { return l.act === "PROXY" && l.target ? "PROXY@" + l.target : l.act; };
@@ -81,7 +120,7 @@
   var isPlain = function (l) { return !!PLAIN[l.kind]; };
 
   function lineText(l) {
-    var s = l.raw !== null ? l.raw : destKey(l) + " " + condKey(l) + (l.note ? " # " + l.note : "");
+    var s = l.raw !== null ? l.raw : destKey(l) + " " + condKey(l) + modsText(l) + (l.note ? " # " + l.note : "");
     return l.off ? (l.offPre !== null ? l.offPre : "#~ ") + s : s;
   }
 
@@ -101,7 +140,7 @@
     function flush() { for (var i = 0; i < pend.length; i++) items.push({ t: "raw", text: pend[i] }); pend = []; }
     function lastBlock() { var it = items[items.length - 1]; return it && it.t === "block" ? it : null; }
     function mergeable(b, l) {
-      if (b.lines[0].off !== l.off || destKey(b.lines[0]) !== destKey(l) || !isPlain(l)) return false;
+      if (b.lines[0].off !== l.off || destKey(b.lines[0]) !== destKey(l) || !isPlain(l) || modsText(b.lines[0]) !== modsText(l)) return false;
       for (var i = 0; i < b.lines.length; i++) if (!isPlain(b.lines[i])) return false;
       return true;
     }
@@ -187,16 +226,32 @@
     var l = parseLine(key + " " + cond);
     if (!l || hasCond(b, cond)) return false;
     l.off = isOff(b);
+    var f = b.lines[0];
+    if (f) { l.src = f.src.slice(); l.ports = f.ports.slice(); l.net = f.net.slice(); }
     b.lines.push(l);
     return true;
   }
   function removeCond(b, i) { b.lines.splice(i, 1); }
+
+  // Сужение блока (устройства, порты, протокол): у всех строк одно; null — строки разошлись.
+  function scope(b) {
+    if (!b.lines.length) return { src: [], ports: [], net: [] };
+    var k = modsText(b.lines[0]);
+    for (var i = 1; i < b.lines.length; i++) if (modsText(b.lines[i]) !== k) return null;
+    var f = b.lines[0];
+    return { src: f.src.slice(), ports: f.ports.slice(), net: f.net.slice() };
+  }
+  function setScope(b, sc) {
+    var net = (sc.net || []).slice().sort();
+    b.lines.forEach(function (l) { l.src = (sc.src || []).slice(); l.ports = (sc.ports || []).slice(); l.net = net.slice(); l.raw = null; });
+  }
 
   // Новый блок: условия добавляются как есть, затем всем строкам ставится назначение.
   function newBlock(o) {
     var b = { t: "block", head: true, name: cleanName(o.name), icon: cleanName(o.icon), hraw: null, pre: [], lines: [], trail: 1 };
     (o.conds || []).forEach(function (c) { addCond(b, c); });
     setDest(b, o.dest || "PROXY");
+    if (o.scope) setScope(b, o.scope);
     return b;
   }
 
@@ -225,7 +280,7 @@
   }
   function clone(b) {
     return { t: "block", head: true, name: b.name, icon: b.icon, hraw: null, pre: [], trail: 1,
-      lines: b.lines.map(function (l) { return { act: l.act, target: l.target, kind: l.kind, value: l.value, off: l.off, offPre: null, note: l.note, raw: null, pre: [] }; }) };
+      lines: b.lines.map(function (l) { return { act: l.act, target: l.target, kind: l.kind, value: l.value, src: l.src.slice(), ports: l.ports.slice(), net: l.net.slice(), off: l.off, offPre: null, note: l.note, raw: null, pre: [] }; }) };
   }
 
   // Какой записи каталога соответствует блок: по значку или по тому же набору условий.
@@ -246,7 +301,7 @@
     var out = [];
     m.items.forEach(function (it) {
       if (it.t !== "block") return;
-      it.lines.forEach(function (l) { if (!l.off) out.push(destKey(l) + " " + condKey(l)); });
+      it.lines.forEach(function (l) { if (!l.off) out.push(destKey(l) + " " + condKey(l) + modsText(l)); });
     });
     return out;
   }
@@ -254,7 +309,7 @@
   var api = { parse: parse, serialize: serialize, parseLine: parseLine, parseCond: parseCond, parseAction: parseAction,
     blocks: blocks, bad: bad, dest: dest, setDest: setDest, isOff: isOff, setOff: setOff, conds: conds, hasCond: hasCond,
     addCond: addCond, removeCond: removeCond, newBlock: newBlock, add: add, remove: remove, move: move, step: step,
-    clone: clone, service: service, effective: effective, destKey: destKey };
+    clone: clone, service: service, effective: effective, destKey: destKey, scope: scope, setScope: setScope, modsText: modsText };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.AWG_RULES = api;
 })(typeof window !== "undefined" ? window : globalThis);

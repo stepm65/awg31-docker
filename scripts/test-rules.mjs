@@ -22,6 +22,9 @@ function variants(text) {
   m = R.parse(text); [...R.blocks(m)].reverse().forEach((b, i, a) => R.move(m, b, null)); keep("reversed", m);
   m = R.parse(text); { const b = R.blocks(m)[0]; if (b) R.step(m, b, 1); } keep("down", m);
   m = R.parse(text); R.add(m, R.newBlock({ name: "Новый | блок", icon: "x", conds: ["geosite:new", "Example.org", "10.0.0.5/8"], dest: "DROP" })); keep("added", m);
+  m = R.parse(text); R.blocks(m).forEach((b) => R.setScope(b, { src: ["@pc"], ports: ["443", "8000-8100"], net: ["udp"] })); keep("scoped", m);
+  m = R.parse(text); R.blocks(m).forEach((b) => R.setScope(b, { src: [], ports: [], net: [] })); keep("unscoped", m);
+  m = R.parse(text); R.add(m, R.newBlock({ name: "Устр", conds: ["geosite:a", "b.example"], dest: "DIRECT", scope: { src: ["@tv"], ports: [], net: [] } })); { const b = R.blocks(m).at(-1); R.addCond(b, "c.example"); } keep("scopedadd", m);
   return out;
 }
 
@@ -99,3 +102,18 @@ for (const t of all) for (const v of variants(t)) {
   assert.equal(R.service(b, catalog).id, "telegram");
 }
 console.log("rules.js: все проверки пройдены");
+
+// 9. Сужение блока: устройства, порты, протокол.
+{
+  const m = R.parse("#@ Steam\nPROXY geosite:steam src=@pc port=443 net=tcp\nPROXY geoip:steam src=@pc port=443 net=tcp\n\n#@ Mix\nDIRECT a.example src=@tv\nDIRECT b.example\n");
+  const [a, b] = R.blocks(m);
+  assert.deepEqual(R.scope(a), { src: ["@pc"], ports: ["443"], net: ["tcp"] });
+  assert.equal(R.scope(b), null, "строки блока с разным сужением");
+  R.setScope(b, { src: ["@tv", "@pc"], ports: [], net: [] });
+  assert.equal(R.serialize(m).split("\n")[5], "DIRECT domain:a.example src=@tv,@pc");
+  assert.equal(R.serialize(m).split("\n")[6], "DIRECT domain:b.example src=@tv,@pc");
+  R.addCond(a, "geosite:valve");
+  assert.equal(a.lines[2].src[0], "@pc", "новое условие наследует сужение блока");
+  assert.equal(R.parseLine("PROXY x.example port=70000"), null);
+  console.log("rules.js: сужения проверены");
+}
