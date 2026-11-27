@@ -69,7 +69,8 @@ LABEL org.opencontainers.image.title="awg31" \
       org.opencontainers.image.version="${VERSION}"
 
 # iptables-legacy: он работает и на ядрах без nf_tables (например, на RouterOS).
-RUN apk add --no-cache bash iproute2 iptables iptables-legacy openresolv ca-certificates \
+# conntrack-tools: мониторинг соединений, если ядро не отдаёт /proc/net/nf_conntrack.
+RUN apk add --no-cache bash iproute2 iptables iptables-legacy openresolv ca-certificates conntrack-tools \
  && for t in iptables iptables-save iptables-restore ip6tables ip6tables-save ip6tables-restore; do \
       ln -sf "/usr/sbin/${t}-legacy" "/usr/sbin/${t}"; \
     done \

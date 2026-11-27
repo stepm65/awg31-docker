@@ -21,6 +21,7 @@ import (
 	"awg31/internal/failover"
 	"awg31/internal/geo"
 	"awg31/internal/group"
+	"awg31/internal/monitor"
 	"awg31/internal/policy"
 	"awg31/internal/ros"
 	"awg31/internal/store"
@@ -41,6 +42,7 @@ type Config struct {
 	Policy   *policy.Engine
 	Router   *ros.Manager
 	Geo      *geo.Store
+	Monitor  *monitor.Monitor
 	Sessions *auth.Sessions
 	Limiter  *auth.Limiter
 
@@ -138,6 +140,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/geo/update", s.requireAuth(s.handleGeoUpdate))
 	mux.HandleFunc("GET /api/geo/categories", s.requireAuth(s.handleGeoCategories))
 	mux.HandleFunc("GET /api/geo/icon", s.requireAuth(s.handleGeoIcon))
+	mux.HandleFunc("GET /api/monitor", s.requireAuth(s.handleMonitor))
+	mux.HandleFunc("GET /api/monitor/flows", s.requireAuth(s.handleMonitorFlows))
 	mux.HandleFunc("GET /api/devices", s.requireAuth(s.handleGetDevices))
 	mux.HandleFunc("PUT /api/devices", s.requireAuth(s.handlePutDevices))
 	mux.HandleFunc("GET /api/devices/leases", s.requireAuth(s.handleDeviceLeases))

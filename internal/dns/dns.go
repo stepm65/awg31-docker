@@ -220,7 +220,7 @@ func (s *Server) Handle(ctx context.Context, query []byte) []byte {
 			lastErr = errors.New("ответ не на этот запрос")
 			continue
 		}
-		if s.Policy != nil && s.Policy.Enabled() {
+		if s.Policy != nil {
 			ans := dnswire.Answers(resp)
 			addrs := make([]netip.Addr, 0, len(ans))
 			ttl := uint32(0)
@@ -230,11 +230,14 @@ func (s *Server) Handle(ctx context.Context, query []byte) []byte {
 					ttl = a.TTL
 				}
 			}
-			if r.By != "default" {
-				s.Policy.Learn(r.Action, r.Target, r.By, addrs, time.Duration(ttl)*time.Second)
+			if s.Policy.Enabled() {
+				if r.By != "default" {
+					s.Policy.Learn(r.Action, r.Target, r.By, addrs, time.Duration(ttl)*time.Second)
+				}
+				// правила с устройствами и портами учатся отдельно: у них свои таблицы
+				s.Policy.LearnScoped(name, addrs, time.Duration(ttl)*time.Second)
 			}
-			// правила с устройствами и портами учатся отдельно: у них свои таблицы
-			s.Policy.LearnScoped(name, addrs, time.Duration(ttl)*time.Second)
+			s.Policy.NoteNames(name, addrs, time.Duration(ttl)*time.Second) // для мониторинга
 		}
 		return resp
 	}

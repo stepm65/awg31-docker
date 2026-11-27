@@ -195,6 +195,18 @@
     return out.join("\n") + (out.length && m.eol !== false ? "\n" : "");
   }
 
+  // Номера строк (с 1) в тексте, который даст serialize: l.ln у каждой строки правила.
+  function lineNos(m) {
+    var n = 0;
+    m.items.forEach(function (it) {
+      if (it.t === "raw") { n++; return; }
+      n += it.pre.length;
+      if (it.head) n++;
+      it.lines.forEach(function (l) { n += l.pre.length; n++; l.ln = n; });
+      n += it.trail;
+    });
+  }
+
   var blocks = function (m) { return m.items.filter(function (it) { return it.t === "block"; }); };
   var bad = function (m) { return m.items.filter(function (it) { return it.t === "raw" && it.bad; }); };
 
@@ -309,7 +321,7 @@
   var api = { parse: parse, serialize: serialize, parseLine: parseLine, parseCond: parseCond, parseAction: parseAction,
     blocks: blocks, bad: bad, dest: dest, setDest: setDest, isOff: isOff, setOff: setOff, conds: conds, hasCond: hasCond,
     addCond: addCond, removeCond: removeCond, newBlock: newBlock, add: add, remove: remove, move: move, step: step,
-    clone: clone, service: service, effective: effective, destKey: destKey, scope: scope, setScope: setScope, modsText: modsText };
+    clone: clone, service: service, effective: effective, destKey: destKey, scope: scope, setScope: setScope, modsText: modsText, lineNos: lineNos };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.AWG_RULES = api;
 })(typeof window !== "undefined" ? window : globalThis);

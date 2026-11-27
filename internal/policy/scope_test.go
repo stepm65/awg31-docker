@@ -157,3 +157,36 @@ func TestScopedRuleWithUnknownDeviceIsNotApplied(t *testing.T) {
 		t.Fatalf("заметка: %q", e.Stats().LastError)
 	}
 }
+
+func TestClassify(t *testing.T) {
+	e, _, ft, st := env(t, "#@ Steam | steam\nDIRECT 203.0.113.0/24 src=@pc port=443\n\n#@ Сеть\nPROXY@awg0 203.0.113.0/24\nDROP 198.51.100.0/24\n", "direct")
+	e.Tunnels = &primTunnels{fakeTunnels: ft, primary: "awg0"}
+	_ = st.Update(func(s *store.State) error {
+		s.Devices = []store.Device{{ID: "pc", Name: "PC", Addr: "192.168.51.150"}}
+		return nil
+	})
+	_ = e.Reload()
+	pc, tv := netip.MustParseAddr("192.168.51.150"), netip.MustParseAddr("192.168.51.10")
+	dst := netip.MustParseAddr("203.0.113.7")
+	if v := e.Classify(pc, dst, "tcp", 443); v.Line != 2 || v.Action != Direct {
+		t.Fatalf("область: %+v", v)
+	}
+	if v := e.Classify(pc, dst, "tcp", 80); v.Line != 5 || v.Action != Proxy || v.Target != "awg0" {
+		t.Fatalf("другой порт — общее правило: %+v", v)
+	}
+	if v := e.Classify(tv, netip.MustParseAddr("198.51.100.1"), "udp", 53); v.Line != 6 || v.Action != Drop {
+		t.Fatalf("%+v", v)
+	}
+	if v := e.Classify(tv, netip.MustParseAddr("8.8.8.8"), "udp", 53); v.Line != 0 || v.Action != Direct || v.By != "default" {
+		t.Fatalf("по умолчанию: %+v", v)
+	}
+	e.LearnScoped("x", nil, 0) // пустой ответ ничего не ломает
+	lb := Labels("#@ Steam | steam\nDIRECT a.example\n#~ DIRECT b.example\nDIRECT c.example\n\nPROXY d.example\n")
+	if lb[2].Name != "Steam" || lb[2].Head != 1 || lb[4].Head != 1 || lb[3].Name != "" || lb[6].Name != "" {
+		t.Fatalf("подписи: %+v", lb)
+	}
+	e.NoteNames("WWW.Example.org.", []netip.Addr{netip.MustParseAddr("192.0.2.1")}, time.Minute)
+	if e.Name(netip.MustParseAddr("192.0.2.1")) != "www.example.org" {
+		t.Fatal("имя из DNS")
+	}
+}

@@ -117,3 +117,13 @@ console.log("rules.js: все проверки пройдены");
   assert.equal(R.parseLine("PROXY x.example port=70000"), null);
   console.log("rules.js: сужения проверены");
 }
+
+// 10. Номера строк совпадают с текстом.
+{
+  for (const t of all) {
+    const m = R.parse(t); R.lineNos(m);
+    const lines = R.serialize(m).split("\n");
+    for (const b of R.blocks(m)) for (const l of b.lines) assert.ok(lines[l.ln - 1].includes(l.value) || lines[l.ln - 1].includes(l.raw || "\u0000"), "строка " + l.ln + ": " + JSON.stringify(t));
+  }
+  console.log("rules.js: номера строк проверены");
+}

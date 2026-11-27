@@ -25,6 +25,7 @@ import (
 	"awg31/internal/failover"
 	"awg31/internal/geo"
 	"awg31/internal/group"
+	"awg31/internal/monitor"
 	"awg31/internal/policy"
 	"awg31/internal/ros"
 	"awg31/internal/store"
@@ -233,8 +234,11 @@ func run() error {
 		return err
 	}
 
+	mon := &monitor.Monitor{Store: st, Policy: pol, Tunnels: tm, Runner: runner, Logf: logf,
+		Ifaces: func() []string { n, _ := st.ListProfiles(); return n }}
+
 	srv := web.New(web.Config{
-		Store: st, Tunnels: tm, Subs: subs, Failover: fo, Groups: grp, Policy: pol, Geo: geoStore, Router: rosMgr, DNSEnabled: dnsSrv != nil,
+		Store: st, Tunnels: tm, Subs: subs, Failover: fo, Groups: grp, Policy: pol, Geo: geoStore, Router: rosMgr, Monitor: mon, DNSEnabled: dnsSrv != nil,
 		Sessions:       auth.NewSessions(24*time.Hour, 64),
 		Limiter:        auth.NewLimiter(5, 2*time.Minute, time.Minute, 4096),
 		SetupToken:     setupToken,
@@ -311,6 +315,7 @@ func run() error {
 
 	go subs.Run(ctx)
 	go pol.Run(ctx)
+	go mon.Run(ctx)
 	go rosMgr.Run(ctx)
 	go geoUpdater(ctx, st, geoStore, pol, logf)
 	if dnsSrv != nil {

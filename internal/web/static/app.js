@@ -76,7 +76,19 @@ const I18N = {
     ago_s: "{n} с назад", ago_m: "{n} мин назад", ago_h: "{n} ч назад", ago_d: "{n} дн назад",
     loading: "Загрузка…", yes: "да", no: "нет", back: "К списку", confirmDelete: "Подтвердить удаление",
     version: "Версия", language: "Язык", close: "Закрыть",
-    navInfra: "ИНФРАСТРУКТУРА", navProfiles: "ПРОФИЛИ", navSystem: "СИСТЕМА", navDevices: "Устройства",
+    navInfra: "ИНФРАСТРУКТУРА", navProfiles: "ПРОФИЛИ", navSystem: "СИСТЕМА", navDevices: "Устройства", navMonitor: "Мониторинг", ssWorking: "работает", ssIdle: "нет туннелей", ssCpu: "Процессор", ssMem: "Память контейнера", ssConns: "Соединений клиентов", ssUptime: "Время работы",
+    monTitle: "Мониторинг", monSub: "Трафик, устройства, правила и туннели по соединениям клиентов.",
+    monTraffic: "Трафик", monWin15: "15 минут", monWin60: "1 час", monPeak: "пик", monDown: "загрузка", monUp: "отдача",
+    monVpn: "через VPN", monNoData: "Замеров пока нет: первые точки появятся через несколько секунд.",
+    monTopo: "Топология соединений", monDevices: "Устройства", monRules: "Правила", monOuts: "Выход",
+    monConns: "соединений", monByConns: "По соединениям", monByBytes: "По объёму", monSearch: "Устройство, домен, правило или туннель",
+    monDefault: "по умолчанию", monDirect: "Напрямую", monDrop: "Блок", monVpnOut: "VPN", monMore: "ещё {n}",
+    monStatDev: "устройств", monStatRules: "правил", monStatOuts: "выходов", monStatConns: "соединений",
+    monNoConntrack: "Таблица соединений (conntrack) недоступна: ядро не отдаёт /proc/net/nf_conntrack, и утилиты conntrack нет. Трафик по-прежнему считается.",
+    monNoFlows: "Соединений клиентов сейчас нет. Здесь видно только то, что проходит через контейнер.",
+    monConnTitle: "Соединения", monColDev: "Устройство", monColDst: "Назначение", monColRule: "Правило", monColOut: "Выход", monColBytes: "Объём", monColN: "Соед.", monShown: "Показаны {n} крупнейших из {m}: уточните поиск.",
+    monSelHint: "Нажмите на устройство, правило или выход, чтобы подсветить его путь. Повторное нажатие снимает выбор.",
+    monNoBytes: "Учёт объёма в conntrack выключен, видно только число соединений.",
     devTitle: "Устройства", devSub: "Имена и адреса устройств LAN: для правил по устройствам и мониторинга.",
     devListTitle: "Список устройств", devName: "Имя", devAddr: "IP или сеть", devKind: "Тип", devAdd: "Добавить устройство",
     devFromDhcp: "Из DHCP роутера", devSave: "Сохранить", devSaved: "Устройства сохранены.", devRemove: "Удалить {name}",
@@ -183,7 +195,7 @@ const I18N = {
     polSaved: "Правила сохранены.", polSavedWarn: "Правила сохранены, но:",
     polTestTitle: "Проверить", polTestLabel: "Домен или IP-адрес", polTestBtn: "Проверить", polBy: "правило",
     // редактор маршрутов
-    rtAdd: "Добавить сервис", rtSearch: "Поиск по правилам", rtFltAll: "Все", rtFltProxy: "Через VPN", rtFltDirect: "Напрямую", rtFltDrop: "Блок", rtFltOff: "Выключены", rtFltDevs: "С устройствами", rtFltExtra: "С портами",
+    rtAdd: "Добавить сервис", rtSearch: "Поиск по правилам", rtFltAll: "Все", rtFltProxy: "Через VPN", rtFltDirect: "Напрямую", rtFltDrop: "Блок", rtFltOff: "Выключены", rtFltDevs: "С устройствами", rtFltExtra: "С портами", rtHits: "Соединений по этому правилу сейчас: {n}",
     rtColDevices: "Устройства", rtAllDevices: "Все устройства", rtNDevices: "{n} устр.", rtDevicesOf: "Устройства правила «{name}»",
     rtScopeTitle: "Применить к устройствам", rtScopeAll: "Все устройства", rtScopeSearch: "Поиск устройства", rtScopeChosen: "Выбрано: {n}",
     rtScopeReset: "сбросить", rtScopeNoDevices: "Устройств пока нет: добавьте их на странице «Устройства».", rtScopeGoDevices: "Открыть «Устройства»",
@@ -272,7 +284,19 @@ const I18N = {
     ago_s: "{n}s ago", ago_m: "{n}m ago", ago_h: "{n}h ago", ago_d: "{n}d ago",
     loading: "Loading…", yes: "yes", no: "no", back: "Back to list", confirmDelete: "Confirm deletion",
     version: "Version", language: "Language", close: "Close",
-    navInfra: "INFRASTRUCTURE", navProfiles: "PROFILES", navSystem: "SYSTEM", navDevices: "Devices",
+    navInfra: "INFRASTRUCTURE", navProfiles: "PROFILES", navSystem: "SYSTEM", navDevices: "Devices", navMonitor: "Monitoring", ssWorking: "running", ssIdle: "no tunnels", ssCpu: "CPU", ssMem: "Container memory", ssConns: "Client connections", ssUptime: "Uptime",
+    monTitle: "Monitoring", monSub: "Traffic, devices, rules and tunnels by client connections.",
+    monTraffic: "Traffic", monWin15: "15 minutes", monWin60: "1 hour", monPeak: "peak", monDown: "download", monUp: "upload",
+    monVpn: "via VPN", monNoData: "No samples yet: the first points appear in a few seconds.",
+    monTopo: "Connection topology", monDevices: "Devices", monRules: "Rules", monOuts: "Outbound",
+    monConns: "connections", monByConns: "By connections", monByBytes: "By volume", monSearch: "Device, domain, rule or tunnel",
+    monDefault: "default", monDirect: "Direct", monDrop: "Blocked", monVpnOut: "VPN", monMore: "{n} more",
+    monStatDev: "devices", monStatRules: "rules", monStatOuts: "outbounds", monStatConns: "connections",
+    monNoConntrack: "The connection table (conntrack) is not available: the kernel has no /proc/net/nf_conntrack and there is no conntrack tool. Traffic is still counted.",
+    monNoFlows: "No client connections right now. Only traffic that goes through the container is visible here.",
+    monConnTitle: "Connections", monColDev: "Device", monColDst: "Destination", monColRule: "Rule", monColOut: "Outbound", monColBytes: "Volume", monColN: "Conn.", monShown: "Showing the {n} largest of {m}: refine the search.",
+    monSelHint: "Click a device, rule or outbound to highlight its path. Click again to clear.",
+    monNoBytes: "Byte accounting in conntrack is off, only connection counts are shown.",
     devTitle: "Devices", devSub: "Names and addresses of LAN devices: for per-device rules and monitoring.",
     devListTitle: "Device list", devName: "Name", devAddr: "IP or network", devKind: "Type", devAdd: "Add device",
     devFromDhcp: "From router DHCP", devSave: "Save", devSaved: "Devices saved.", devRemove: "Remove {name}",
@@ -371,7 +395,7 @@ const I18N = {
     polSaved: "Rules saved.", polSavedWarn: "Rules saved, but:",
     polTestTitle: "Test", polTestLabel: "Domain or IP address", polTestBtn: "Test", polBy: "rule",
     // routing editor
-    rtAdd: "Add service", rtSearch: "Search rules", rtFltAll: "All", rtFltProxy: "Via VPN", rtFltDirect: "Direct", rtFltDrop: "Blocked", rtFltOff: "Off", rtFltDevs: "With devices", rtFltExtra: "With ports",
+    rtAdd: "Add service", rtSearch: "Search rules", rtFltAll: "All", rtFltProxy: "Via VPN", rtFltDirect: "Direct", rtFltDrop: "Blocked", rtFltOff: "Off", rtFltDevs: "With devices", rtFltExtra: "With ports", rtHits: "Connections by this rule right now: {n}",
     rtColDevices: "Devices", rtAllDevices: "All devices", rtNDevices: "{n} dev.", rtDevicesOf: "Devices of rule \"{name}\"",
     rtScopeTitle: "Apply to devices", rtScopeAll: "All devices", rtScopeSearch: "Find a device", rtScopeChosen: "Selected: {n}",
     rtScopeReset: "reset", rtScopeNoDevices: "No devices yet: add them on the \"Devices\" page.", rtScopeGoDevices: "Open \"Devices\"",
@@ -589,6 +613,7 @@ function parseRoute() {
   if (parts[0] === "groups") return { page: "groups" };
   if (parts[0] === "router") return { page: "router" };
   if (parts[0] === "devices") return { page: "devices" };
+  if (parts[0] === "monitor") return { page: "monitor" };
   if (parts[0] === "p" && parts[1]) return { page: "profile", name: parts[1], tab: ["config", "sub"].includes(parts[2]) ? parts[2] : "overview" };
   return { page: "overview" };
 }
@@ -603,6 +628,7 @@ window.addEventListener("hashchange", () => {
   if (S.route.page === "policy") { S.polEdit = null; S.polTest = null; loadPolicy(true); }
   if (S.route.page === "router") { S.rosEdit = null; loadRouter(true); }
   if (S.route.page === "devices") { S.devEdit = null; S.leases = null; loadDevices(true); }
+  if (S.route.page === "monitor") { loadMonitor(true); loadFlows(true); }
   if (S.auth && S.auth.authenticated) { renderSide(); renderMain(); }
 });
 document.addEventListener("input", (e) => { if (e.target.closest && e.target.closest("#main form") && !e.target.closest("[data-nodirty]")) S.dirty = true; });
@@ -706,6 +732,7 @@ function renderSide() {
     link("failover", "layers", t("navFailover"), "/failover"),
     link("groups", "merge", t("navGroups"), "/groups"),
     link("policy", "route", t("navPolicy"), "/policy"),
+    link("monitor", "activity", t("navMonitor"), "/monitor"),
     link("devices", "devices", t("navDevices"), "/devices"),
     h("div", { class: "side-title side-group" }, h("span", {}, t("navProfiles")), h("span", { class: "badge" }, String(list.length))),
     list.map((p) => h("a", { class: "side-inst", href: "#/p/" + encodeURIComponent(p.name), "aria-current": r.page === "profile" && r.name === p.name ? "page" : null, title: p.name },
@@ -714,8 +741,32 @@ function renderSide() {
     h("div", { class: "side-title" }, h("span", {}, t("navSystem"))),
     link("router", "link", t("navRouter"), "/router"),
     link("maintenance", "settings", t("navMaint"), "/maintenance"),
+    h("div", { class: "side-status", id: "side-status" }),
     h("div", { class: "side-foot" }, icon("tag", 16), h("span", { class: "ver" }, "v" + ((S.data && S.data.version) || "…"))),
   ].flat(Infinity));
+  renderSideStatus();
+}
+
+// Блок состояния внизу меню: основной туннель, скорость, процессор, память, соединения, время работы.
+function renderSideStatus() {
+  const box = document.getElementById("side-status");
+  if (!box) return;
+  const m = S.mon, d = S.data || {};
+  if (!m) { box.replaceChildren(); return; }
+  const sys = m.system || {}, pts = (m.traffic || []).slice(-60), last = pts[pts.length - 1] || { down: 0, up: 0 };
+  const prim = d.primary || ((d.profiles || []).find((p) => p.primary) || {}).name || "";
+  const up = (d.profiles || []).some((p) => p.up);
+  const dur = (s2) => { s2 = Math.max(0, s2 | 0); const dd = Math.floor(s2 / 86400), hh = Math.floor(s2 % 86400 / 3600), mm = Math.floor(s2 % 3600 / 60); return dd ? dd + (lang === "en" ? "d " : "д ") + hh + (lang === "en" ? "h" : "ч") : hh ? hh + (lang === "en" ? "h " : "ч ") + mm + (lang === "en" ? "m" : "м") : mm + (lang === "en" ? " min" : " мин"); };
+  box.replaceChildren(
+    h("div", { class: "ss-head" }, icon("activity", 14), h("b", {}, "AWG"), h("span", { class: "ss-state" + (up ? " on" : "") }, up ? t("ssWorking") : t("ssIdle"))),
+    prim ? h("div", { class: "ss-prim" }, icon("shield", 14), h("span", {}, prim)) : null,
+    sparkline(pts.map((p) => p.down)),
+    h("div", { class: "ss-rates" }, h("span", { class: "d" }, "↓ " + fmtRate(last.down)), h("span", { class: "u" }, "↑ " + fmtRate(last.up))),
+    h("div", { class: "ss-grid" },
+      h("span", { title: t("ssCpu") }, icon("server", 13), (sys.cpu || 0).toFixed(1) + "%"),
+      h("span", { title: t("ssMem") }, icon("layers", 13), fmtBytes(sys.mem_group || sys.mem_rss || 0)),
+      h("span", { title: t("ssConns") }, icon("link", 13), String(sys.conns || 0)),
+      h("span", { title: t("ssUptime") }, icon("clock", 13), dur(sys.uptime || 0))));
 }
 
 function renderMain() {
@@ -723,7 +774,7 @@ function renderMain() {
   const r = S.route;
   const page = r.page === "profiles" ? pageProfiles() : r.page === "profile" ? pageProfile(r)
     : r.page === "new" ? pageNew() : r.page === "maintenance" ? pageMaintenance()
-    : r.page === "failover" ? pageFailover() : r.page === "groups" ? pageGroups() : r.page === "policy" ? pagePolicy() : r.page === "router" ? pageRouter() : r.page === "devices" ? pageDevices() : pageOverview();
+    : r.page === "failover" ? pageFailover() : r.page === "groups" ? pageGroups() : r.page === "policy" ? pagePolicy() : r.page === "router" ? pageRouter() : r.page === "devices" ? pageDevices() : r.page === "monitor" ? pageMonitor() : pageOverview();
   mainEl.replaceChildren(h("div", { id: "flash-slot" }, flashBox()), page);
 }
 
@@ -1534,6 +1585,15 @@ function rtScopeChips(b) {
   return out;
 }
 
+// Счётчик соединений правила из мониторинга (только когда текст сохранён: номера строк те же).
+function rtHits(b) {
+  const by = S.flows && S.flows.by_line;
+  if (!by || S.dirty || S.flows.source === "none") return null;
+  let n = 0;
+  for (const l of b.lines) if (l.ln && by[l.ln]) n += by[l.ln];
+  return h("span", { class: "rt-hits" + (n ? "" : " zero"), title: t("rtHits", { n }) }, String(n));
+}
+
 function rtCondChip(c, g) {
   const loaded = c.kind === "geosite" ? (g.site_loaded || {})[c.value] : c.kind === "geoip" ? (g.ip_loaded || {})[c.value] : undefined;
   const miss = (g.missing || []).includes(c.key);
@@ -1653,7 +1713,8 @@ function rtRow(b, pos, total, locked, g) {
   const MAX = 4, conds = info.conds;
   li.append(
     grip,
-    h("div", { class: "rt-svc" }, rtTile(info), h("div", { class: "rt-name" }, h("b", {}, info.name), h("span", {}, conds.length ? t("rtColConds") + ": " + conds.length : t("rtNoCond")))),
+    h("div", { class: "rt-svc" }, rtTile(info), h("div", { class: "rt-name" }, h("b", {}, info.name), h("span", {}, conds.length ? t("rtColConds") + ": " + conds.length : t("rtNoCond"))),
+      rtHits(b)),
     h("div", { class: "rt-conds" }, conds.slice(0, MAX).map((c) => rtCondChip(c, g)),
       conds.length > MAX && h("button", { type: "button", class: "rt-chip rt-more", onclick: () => rtDialog(b) }, t("rtMore", { n: conds.length - MAX })),
       rtScopeChips(b)),
@@ -1666,6 +1727,7 @@ function rtRow(b, pos, total, locked, g) {
 
 function rtDraw(fk) {
   const R = S.rt, m = R.model, all = RULES.blocks(m), g = (S.pol && S.pol.geo) || {};
+  RULES.lineNos(m);
   if (!rtEls.list) return;
   const q = R.q.trim().toLowerCase();
   const tests = { all: () => true, proxy: (b) => rtDestClass(RULES.dest(b)) === "proxy", direct: (b) => RULES.dest(b) === "DIRECT", drop: (b) => RULES.dest(b) === "DROP",
@@ -2078,6 +2140,240 @@ function pagePolicy() {
   return page;
 }
 
+/* ---------- мониторинг ---------- */
+async function loadMonitor(quiet) {
+  const win = S.monWin || 900;
+  try { S.mon = await api("GET", "/api/monitor?window=" + win); } catch (e) { if (!quiet) { say("error", e.message); renderFlash(); } return; }
+  if (S.route.page === "monitor" || S.route.page === "overview") { if (!S.busy && !document.querySelector(".row-menu[open]") && !S.monHover) renderMain(); }
+  renderSideStatus();
+}
+async function loadFlows(quiet) {
+  try { S.flows = await api("GET", "/api/monitor/flows"); } catch (e) { if (!quiet) { say("error", e.message); renderFlash(); } return; }
+  if (S.route.page === "monitor" && !S.busy && !S.monHover) renderMain();
+  if (S.route.page === "policy" && !S.dirty && !S.busy && !rtTyping() && !rtDialogOpen()) rtDraw();
+}
+const fmtRate = (bps) => {
+  const bits = (Number(bps) || 0) * 8;
+  const u = lang === "ru" ? ["бит/с", "Кбит/с", "Мбит/с", "Гбит/с"] : ["bit/s", "kbit/s", "Mbit/s", "Gbit/s"];
+  let v = bits, i = 0;
+  while (v >= 1000 && i < u.length - 1) { v /= 1000; i++; }
+  return (i ? v.toFixed(v < 10 ? 1 : 0) : Math.round(v)) + " " + u[i];
+};
+const fmtClock = (unix) => new Date(unix * 1000).toLocaleTimeString(lang === "en" ? "en-GB" : "ru-RU", { hour: "2-digit", minute: "2-digit" });
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) if (v != null) el.setAttribute(k, v);
+  return el;
+}
+
+// График трафика: загрузка (янтарный) и отдача (голубой), подсказка по наведению.
+function trafficChart(pts, o = {}) {
+  const box = h("div", { class: "tchart" + (o.compact ? " compact" : "") });
+  if (!pts || pts.length < 2) { box.append(h("p", { class: "hint" }, t("monNoData"))); return box; }
+  const W = 1000, H = o.compact ? 150 : 200, n = pts.length;
+  const max = Math.max(1, ...pts.map((p) => Math.max(p.down, p.up)));
+  const x = (i) => (i / (n - 1)) * W, y = (v) => H - 4 - (v / max) * (H - 14);
+  const line = (k) => pts.map((p, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(p[k]).toFixed(1)).join(" ");
+  const svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, preserveAspectRatio: "none", class: "tchart-svg", "aria-hidden": "true" });
+  for (const fr of [0.25, 0.5, 0.75]) svg.append(svgEl("line", { x1: 0, x2: W, y1: (H * fr).toFixed(1), y2: (H * fr).toFixed(1), class: "grid" }));
+  svg.append(svgEl("path", { d: line("down") + " L" + W + " " + H + " L0 " + H + " Z", class: "a-down" }), svgEl("path", { d: line("down"), class: "l-down" }),
+    svgEl("path", { d: line("up") + " L" + W + " " + H + " L0 " + H + " Z", class: "a-up" }), svgEl("path", { d: line("up"), class: "l-up" }));
+  const cursor = svgEl("line", { x1: 0, x2: 0, y1: 0, y2: H, class: "cursor", visibility: "hidden" });
+  svg.append(cursor);
+  const tip = h("div", { class: "tchart-tip", hidden: true });
+  const wrap = h("div", { class: "tchart-plot" }, svg, tip, h("span", { class: "tchart-max" }, fmtRate(max)));
+  wrap.addEventListener("mousemove", (e) => {
+    const r = wrap.getBoundingClientRect(), fx = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), i = Math.round(fx * (n - 1)), p = pts[i];
+    S.monHover = true;
+    cursor.setAttribute("x1", x(i)); cursor.setAttribute("x2", x(i)); cursor.setAttribute("visibility", "visible");
+    tip.hidden = false;
+    tip.replaceChildren(h("b", {}, fmtClock(p.t)), h("span", { class: "d" }, "↓ " + fmtRate(p.down)), h("span", { class: "u" }, "↑ " + fmtRate(p.up)), h("span", { class: "v" }, t("monVpn") + " ↓ " + fmtRate(p.vdown)));
+    tip.style.left = Math.min(r.width - 170, Math.max(0, fx * r.width + 12)) + "px";
+  });
+  wrap.addEventListener("mouseleave", () => { S.monHover = false; tip.hidden = true; cursor.setAttribute("visibility", "hidden"); });
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => h("span", {}, fmtClock(pts[Math.round(f * (n - 1))].t)));
+  box.append(wrap, h("div", { class: "tchart-x" }, ticks));
+  return box;
+}
+function trafficHead(pts) {
+  const last = pts && pts.length ? pts[pts.length - 1] : { down: 0, up: 0 };
+  const peak = pts && pts.length ? Math.max(...pts.map((p) => Math.max(p.down, p.up))) : 0;
+  return h("div", { class: "tchart-head" },
+    h("span", { class: "rate-chip d" }, "↓ " + fmtRate(last.down)), h("span", { class: "rate-chip u" }, "↑ " + fmtRate(last.up)),
+    h("span", { class: "tchart-peak" }, t("monPeak") + " ", h("b", {}, fmtRate(peak))));
+}
+
+// Узел схемы: подпись и значок для устройства, правила или выхода.
+function monNodeInfo(n) {
+  if (n.id.startsWith("dev:") || n.id.startsWith("ip:")) return { label: n.name, sub: n.sub || (n.id.startsWith("ip:") ? "" : ""), ico: devIcon(n.kind, 15) };
+  if (n.id.startsWith("rule:")) {
+    if (n.id === "rule:default") return { label: t("monDefault"), sub: "", ico: icon("route", 15) };
+    const svc = (SVC.catalog || []).find((s) => s.id === n.icon);
+    return { label: n.name, sub: n.sub, tile: rtTile({ slug: svc ? svc.icon : (SVC.icons[n.icon] ? n.icon : null), id: svc ? svc.id : "", name: n.name || "?" }) };
+  }
+  if (n.kind === "direct") return { label: t("monDirect"), ico: icon("arrow", 15), cls: "o-direct" };
+  if (n.kind === "drop") return { label: t("monDrop"), ico: icon("x", 15), cls: "o-drop" };
+  return { label: n.name === "vpn" ? t("monVpnOut") : n.name, sub: n.kind === "group" ? t("navGroups") : "", ico: icon(n.kind === "group" ? "merge" : "shield", 15), cls: "o-vpn" };
+}
+
+// Схема «устройства → правила → выходы» на SVG. Толщина потока — соединения или объём.
+function sankey(snap, mode, sel, q) {
+  const val = (x) => (mode === "bytes" ? x.bytes : x.conns);
+  let paths = snap.paths.filter((p) => val(p) > 0);
+  const nodesById = {};
+  for (const n of [...snap.devices, ...snap.rules, ...snap.outs]) nodesById[n.id] = n;
+  if (q) {
+    const ql = q.toLowerCase();
+    const hit = (id) => { const n = nodesById[id] || {}; const i = monNodeInfo(n); return (String(i.label) + " " + (n.sub || "") + " " + id).toLowerCase().includes(ql); };
+    const hosts = new Set(snap.conns.filter((c) => (c.host + " " + c.dst).toLowerCase().includes(ql)).map((c) => c.src));
+    paths = paths.filter((p) => hit(p.dev) || hit(p.rule) || hit(p.out) || [...hosts].some((h) => p.dev === "ip:" + h || (nodesById[p.dev] && nodesById[p.dev].sub === h)));
+  }
+  if (!paths.length) return h("p", { class: "hint" }, t("monNoFlows"));
+  // ограничение числа узлов в колонке: остальное — «ещё N»
+  const LIMIT = 14;
+  const cols = ["dev", "rule", "out"].map((k) => {
+    const sum = {};
+    for (const p of paths) sum[p[k]] = (sum[p[k]] || 0) + val(p);
+    const ids = Object.keys(sum).sort((a, b) => sum[b] - sum[a] || a.localeCompare(b));
+    const keep = new Set(ids.slice(0, LIMIT));
+    const rest = ids.length - keep.size;
+    return { k, ids: ids.slice(0, LIMIT).concat(rest > 0 ? ["more:" + k] : []), sum, keep, rest };
+  });
+  paths = paths.map((p) => {
+    const q2 = { ...p };
+    for (const c of cols) if (!c.keep.has(p[c.k])) q2[c.k] = "more:" + c.k;
+    return q2;
+  });
+  for (const c of cols) if (c.rest > 0) { c.sum["more:" + c.k] = 0; for (const p of paths) if (p[c.k] === "more:" + c.k) c.sum["more:" + c.k] += val(p); }
+  const total = paths.reduce((a, p) => a + val(p), 0) || 1;
+  const W = 1000, NW = 230, GAP = 10, MINH = 34;
+  const colX = [0, (W - NW) / 2, W - NW];
+  const maxN = Math.max(...cols.map((c) => c.ids.length));
+  const scaleH = Math.max(260, maxN * (MINH + GAP) + 40);
+  const pos = {};
+  cols.forEach((c, ci) => {
+    let y = 4;
+    for (const id of c.ids) {
+      const hgt = Math.max(MINH, (c.sum[id] / total) * (scaleH - c.ids.length * GAP));
+      pos[id] = { x: colX[ci], y, h: hgt, outY: y, inY: y };
+      y += hgt + GAP;
+    }
+    c.height = y;
+  });
+  const H = Math.max(...cols.map((c) => c.height)) + 4;
+  const svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, class: "sankey-svg", role: "img", "aria-label": t("monTopo") });
+  // выделение: путь выбранного узла
+  const onSel = (p) => !sel || p.dev === sel || p.rule === sel || p.out === sel;
+  const bandsG = svgEl("g", { class: "bands" }), nodesG = svgEl("g", { class: "nodes" });
+  const hue = (id) => { let s2 = 0; for (const ch of id) s2 = (s2 * 31 + ch.codePointAt(0)) % 997; return s2 % 8; };
+  // ширина потока внутри узла пропорциональна его значению
+  const band = (a, b, v, cls) => {
+    const pa = pos[a], pb = pos[b], ha = (v / cols[0].sum[a] || 0);
+    return { pa, pb, v, cls };
+  };
+  const seg = [];
+  const agg = (k1, k2) => {
+    const m = {};
+    for (const p of paths) { const key = p[k1] + "|" + p[k2]; (m[key] = m[key] || { a: p[k1], b: p[k2], v: 0, on: false }).v += val(p); if (onSel(p)) m[key].on = true; }
+    return Object.values(m).sort((x, y) => (pos[x.a].y - pos[y.a].y) || (pos[x.b].y - pos[y.b].y));
+  };
+  const nodeSum = (id, ci) => cols[ci].sum[id] || 1;
+  for (const [k1, k2, ci1, ci2] of [["dev", "rule", 0, 1], ["rule", "out", 1, 2]]) {
+    for (const l of agg(k1, k2)) {
+      const pa = pos[l.a], pb = pos[l.b];
+      const ta = (l.v / nodeSum(l.a, ci1)) * pa.h, tb = (l.v / nodeSum(l.b, ci2)) * pb.h;
+      const x0 = pa.x + NW, x1 = pb.x, y0 = pa.outY, y1 = pb.inY, xm = (x0 + x1) / 2;
+      pa.outY += ta; pb.inY += tb;
+      const d = "M" + x0 + " " + y0 + " C" + xm + " " + y0 + " " + xm + " " + y1 + " " + x1 + " " + y1 +
+        " L" + x1 + " " + (y1 + tb) + " C" + xm + " " + (y1 + tb) + " " + xm + " " + (y0 + ta) + " " + x0 + " " + (y0 + ta) + " Z";
+      const colorId = k1 === "dev" ? l.a : l.b;
+      bandsG.append(svgEl("path", { d, class: "band h" + hue(colorId) + (sel ? (l.on ? " on" : " dim") : "") + (k2 === "out" ? " to-" + ((nodesById[l.b] || {}).kind || "more") : "") }));
+    }
+  }
+  void band; void seg;
+  // узлы
+  const pick = (id) => { S.monSel = S.monSel === id ? "" : id; renderMain(); };
+  cols.forEach((c, ci) => {
+    for (const id of c.ids) {
+      const p = pos[id], n = nodesById[id];
+      const g = svgEl("g", { class: "node" + (sel && sel === id ? " sel" : "") + (sel && sel !== id && !paths.some((x) => onSel(x) && (x.dev === id || x.rule === id || x.out === id)) ? " dim" : ""), tabindex: id.startsWith("more:") ? null : "0", role: id.startsWith("more:") ? null : "button" });
+      const info = n ? monNodeInfo(n) : { label: t("monMore", { n: c.rest }) };
+      g.append(svgEl("rect", { x: p.x, y: p.y, width: NW, height: p.h, rx: 8, class: "nb " + (info.cls || "") + (ci === 0 ? " c-dev" : ci === 1 ? " c-rule" : " c-out") }));
+      const tx = svgEl("text", { x: p.x + 12, y: p.y + Math.min(p.h / 2, 22) + 4, class: "nl" });
+      tx.textContent = String(info.label || "").slice(0, 26);
+      const tv = svgEl("text", { x: p.x + NW - 10, y: p.y + Math.min(p.h / 2, 22) + 4, class: "nv", "text-anchor": "end" });
+      tv.textContent = mode === "bytes" ? fmtBytes(c.sum[id]) : String(c.sum[id]) + (ci === 2 || ci === 0 ? "" : "");
+      g.append(tx, tv);
+      if (info.sub && p.h >= 46) { const ts = svgEl("text", { x: p.x + 12, y: p.y + 38, class: "ns" }); ts.textContent = String(info.sub).slice(0, 30); g.append(ts); }
+      if (!id.startsWith("more:")) {
+        g.addEventListener("click", () => pick(id));
+        g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(id); } });
+        const tt = svgEl("title", {}); tt.textContent = info.label + (info.sub ? " · " + info.sub : "") + " — " + (mode === "bytes" ? fmtBytes(c.sum[id]) : c.sum[id] + " " + t("monConns")); g.append(tt);
+      }
+      nodesG.append(g);
+    }
+  });
+  svg.append(bandsG, nodesG);
+  return h("div", { class: "sankey" },
+    h("div", { class: "sankey-cols" }, h("span", {}, t("monDevices")), h("span", {}, t("monRules")), h("span", {}, t("monOuts"))),
+    svg);
+}
+
+function pageMonitor() {
+  const m = S.mon, f = S.flows;
+  if (!m) { loadMonitor(); return h("div", {}, heading(t("navInfra"), t("monTitle")), h("div", { class: "loading" }, t("loading"))); }
+  if (!f) loadFlows(true);
+  const win = S.monWin || 900;
+  const setWin = (v) => { S.monWin = v; loadMonitor(); };
+  const mode = S.monMode === "bytes" && f && f.bytes ? "bytes" : "conns";
+  const q = S.monQ || "";
+  const search = h("input", { type: "search", id: "mon-q", "data-keep": "", "data-nodirty": "", placeholder: t("monSearch"), "aria-label": t("monSearch"), value: q, autocomplete: "off",
+    oninput: (e) => { S.monQ = e.target.value; clearTimeout(S.monQT); S.monQT = setTimeout(() => { renderMain(); const el = document.getElementById("mon-q"); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, 250); } });
+  const groupsN = f ? f.outs.filter((o) => o.kind === "group").length : 0;
+  // соединения одного устройства к одному адресу и порту — одной строкой
+  const grouped = {};
+  for (const c of f ? f.conns : []) {
+    if (q && ![c.device, c.src, c.dst, c.host, c.rule, c.out].join(" ").toLowerCase().includes(q.toLowerCase())) continue;
+    const k = [c.src, c.host || c.dst, c.port, c.proto, c.rule, c.out].join("|");
+    const g = grouped[k] || (grouped[k] = { ...c, n: 0, bytes: 0, dsts: new Set() });
+    g.n++; g.bytes += c.bytes || 0; g.dsts.add(c.dst);
+  }
+  const conns = Object.values(grouped).sort((a, b) => (f.bytes ? b.bytes - a.bytes : 0) || b.n - a.n);
+  return h("div", {},
+    heading(t("navInfra"), t("monTitle"), t("monSub")),
+    h("div", { class: "card" },
+      h("div", { class: "heading-row" }, h("h2", {}, icon("activity", 18), " ", t("monTraffic")),
+        h("select", { class: "cell-input", "data-nodirty": "", "aria-label": t("monTraffic"), onchange: (e) => setWin(+e.target.value) },
+          h("option", { value: "900", selected: win === 900 }, t("monWin15")), h("option", { value: "3600", selected: win === 3600 }, t("monWin60")))),
+      trafficHead(m.traffic), trafficChart(m.traffic)),
+    h("div", { class: "card" },
+      h("div", { class: "heading-row" }, h("h2", {}, t("monTopo")),
+        f && f.bytes ? h("div", { class: "seg" },
+          h("button", { type: "button", "aria-pressed": String(mode === "conns"), onclick: () => { S.monMode = "conns"; renderMain(); } }, t("monByConns")),
+          h("button", { type: "button", "aria-pressed": String(mode === "bytes"), onclick: () => { S.monMode = "bytes"; renderMain(); } }, t("monByBytes"))) : null),
+      !f ? h("div", { class: "loading" }, t("loading"))
+        : f.source === "none" ? h("p", { class: "info-line" }, icon("alert", 16), h("span", {}, t("monNoConntrack")))
+          : [h("div", { class: "field mon-search" }, search),
+            h("div", { class: "mon-stats" },
+              h("span", {}, icon("devices", 16), h("b", {}, String(f.devices.length)), t("monStatDev")),
+              h("span", {}, icon("route", 16), h("b", {}, String(f.rules.length)), t("monStatRules")),
+              h("span", {}, icon("layers", 16), h("b", {}, String(f.outs.length)), t("monStatOuts") + (groupsN ? " · " + groupsN + " " + t("navGroups").toLowerCase() : "")),
+              h("span", {}, icon("link", 16), h("b", {}, String(f.total)), t("monStatConns"))),
+            sankey(f, mode, S.monSel || "", q),
+            h("p", { class: "hint" }, t("monSelHint"), f.bytes ? "" : " " + t("monNoBytes"))]),
+    f && f.source !== "none" && h("div", { class: "card" }, h("h2", {}, t("monConnTitle")),
+      conns.length ? h("div", { class: "table-scroll" }, h("table", { class: "mon-conns" },
+        h("thead", {}, h("tr", {}, [t("monColDev"), t("monColDst"), t("monColN"), t("monColRule"), t("monColOut"), t("monColBytes")].map((x) => h("th", { scope: "col" }, x)))),
+        h("tbody", {}, conns.slice(0, 60).map((c) => h("tr", {},
+          h("td", {}, c.device, c.device !== c.src ? h("div", { class: "sub mono" }, c.src) : null),
+          h("td", {}, c.host || h("span", { class: "mono" }, c.dst), h("div", { class: "sub mono" }, (c.host ? [...c.dsts].slice(0, 2).join(", ") + (c.dsts.size > 2 ? "…" : "") + " · " : "") + c.proto + "/" + c.port)),
+          h("td", { class: "mono" }, String(c.n)),
+          h("td", {}, c.rule || h("span", { class: "muted" }, t("monDefault"))),
+          h("td", {}, c.out === "direct" ? t("monDirect") : c.out === "drop" ? t("monDrop") : c.out === "vpn" ? t("monVpnOut") : c.out),
+          h("td", { class: "mono" }, f.bytes ? fmtBytes(c.bytes) : "—"))))),
+        conns.length > 60 && h("p", { class: "hint" }, t("monShown", { n: 60, m: conns.length }))) : h("p", { class: "hint" }, t("monNoFlows"))));
+}
+
 /* ---------- устройства ---------- */
 const DEV_KINDS = ["pc", "laptop", "phone", "tablet", "tv", "console", "speaker", "nas", "printer", "camera", "router", "wifi", "iot", "other"];
 const devIcon = (kind, size = 18) => icon("dev_" + (DEV_KINDS.includes(kind) ? kind : "other"), size);
@@ -2300,5 +2596,8 @@ setInterval(() => {
     if (S.route && S.route.page === "groups") loadGroups(true);
     if (S.route && S.route.page === "policy") loadPolicy(true);
     if (S.route && S.route.page === "router") loadRouter(true);
+    loadMonitor(true);
+    if (S.route && S.route.page === "monitor") loadFlows(true);
+    if (S.route && S.route.page === "policy" && !S.dirty) loadFlows(true);
   }
 }, 5000);

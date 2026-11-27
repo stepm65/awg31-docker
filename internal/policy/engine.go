@@ -100,6 +100,7 @@ type Engine struct {
 	learnedScoped map[string]map[netip.Addr]learned
 	appliedScoped map[int]map[string]string // таблица области -> маршруты
 	appliedRules  map[string]bool           // «4 аргументы ip rule» областей
+	names         map[netip.Addr]nameEntry  // адрес -> имя из DNS (мониторинг)
 	applied       map[string]string         // "4 1.2.3.0/24" -> спецификация маршрута
 	fresh         bool                      // applied совпадает с таблицей
 	stats         Stats
