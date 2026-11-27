@@ -3,6 +3,8 @@
 #  (без /app). Подходит для arm64, arm (ARMv7) и x86_64 (CHR), RouterOS 7.20+ (envs/mounts
 #  с параметром list=). Повторный запуск ничего не дублирует.
 #
+#  0. Нужен пакет container (Extra packages с mikrotik.com/download; для CHR — x86) и
+#     /system/device-mode/update container=yes с подтверждением кнопкой или перезапуском питания.
 #  1. Отредактируйте значения в блоке «Параметры» ниже.
 #  2. Загрузите файл на роутер (Winbox -> Files) и выполните:
 #       /import install-container.rsc
@@ -14,6 +16,21 @@
 #  документацией MikroTik. Если команда не подходит к вашей версии RouterOS,
 #  сверьте имена параметров через «print» или «add ?».
 # ============================================================================
+
+# Пакет container проверяется отдельным блоком до основного. Без пакета RouterOS не знает
+# команд /interface/veth и /container, и основной блок не разбирается вовсе: вместо понятного
+# сообщения выходит «syntax error». Этот блок их не использует и останавливает импорт раньше.
+{
+:if ([:len [/system/package/find name="container"]] = 0) do={
+  :put "container package is not installed. Download Extra packages for your RouterOS version and architecture from mikrotik.com/download (for CHR: x86), upload container-<version>.npk to Files and reboot. Then check: /interface/veth/print"
+  :error "container package is not installed"
+}
+:if ([/system/device-mode/get container] = false) do={
+  :put "container mode is off: /system/device-mode/update container=yes, then press the reset button or power-cycle within 5 minutes (CHR: power the VM off and on from the hypervisor)"
+  :error "container mode is off"
+}
+}
+
 {
 # --- Параметры ---
 # Диск для образа и данных: USB/SD, не внутренняя NAND.
