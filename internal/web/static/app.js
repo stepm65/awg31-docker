@@ -1354,6 +1354,10 @@ const iconUrl = (tag) => "/api/geo/icon?site=" + encodeURIComponent(tag);
 // Значок сайта IPList отдаёт контейнер; его просят только для тегов, похожих на имя сайта.
 const isSiteTag = (v) => /^[a-z0-9][a-z0-9-]*(\.[a-z0-9-]+)+$/.test(v);
 const regionNames = () => { try { return new Intl.DisplayNames([lang === "en" ? "en" : "ru"], { type: "region" }); } catch (_) { return null; } };
+// Группы IPList (каталоги config/ в их репозитории); остальные теги — отдельные сайты, в том числе
+// без домена в имени (copilot, arma2). Новые группы IPList попадут в «Сайты», выбор при этом работает.
+const IPL_GROUPS = new Set(["ai", "anime", "art", "casino", "discord", "education", "finance", "games", "hosting", "jetbrains",
+  "messengers", "music", "news", "porn", "shop", "socials", "tools", "torrent", "video", "youtube"]);
 // Весь список из скачанной базы: теги geosite и geoip одним списком. Известным сервисам достаются название
 // и значок каталога, остальным буквенная плитка (у сайтов IPList подгружается значок сайта). Условия:
 // geosite и, если у тега есть адреса, geoip.
@@ -1365,7 +1369,7 @@ function fullEntries(sites, ips) {
     let name = s ? svcName(s) : tag;
     if (!s && !sset.has(tag) && two && regions) { try { const r = regions.of(tag.toUpperCase()); if (r && r.toLowerCase() !== tag) name = r + " (" + tag + ")"; } catch (_) { /* не код страны */ } }
     let sec = "svc";
-    if (ipl) sec = /[.@]/.test(tag) ? "sites" : "groups";
+    if (ipl) sec = IPL_GROUPS.has(tag) ? "groups" : "sites";
     else if (!sset.has(tag) && two) sec = "countries";
     else if (/^(category|geolocation|tld)-/.test(tag) || tag === "cn" || tag === "private") sec = "cats";
     return { key: tag, id: s ? s.id : "", name, sec,

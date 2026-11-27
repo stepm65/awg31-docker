@@ -543,6 +543,9 @@ func (s *Store) Download(ctx context.Context, siteURL, ipURL string, allowHTTP b
 			continue
 		}
 		src[f.name] = f.url
+		if f.name == "geosite" {
+			s.PruneIcons()
+		}
 	}
 	if raw, err := json.Marshal(src); err == nil {
 		_ = os.WriteFile(filepath.Join(s.Dir, "sources.json"), raw, 0o600)

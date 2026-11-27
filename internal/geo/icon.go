@@ -140,3 +140,30 @@ func iconType(data []byte) string {
 	}
 	return ct
 }
+
+// PruneIcons удаляет из кеша значки сайтов, которых больше нет в загруженной базе geosite (после
+// смены источника или обновления списка). Без базы ничего не трогает.
+func (s *Store) PruneIcons() {
+	cats := s.Categories("geosite")
+	if len(cats) == 0 {
+		return
+	}
+	have := make(map[string]bool, len(cats))
+	for _, c := range cats {
+		have[c] = true
+	}
+	dir := filepath.Join(s.Dir, "icons")
+	ents, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	iconCacheMu.Lock()
+	defer iconCacheMu.Unlock()
+	for _, e := range ents {
+		name := e.Name()
+		site := strings.TrimSuffix(strings.TrimSuffix(name, ".img"), ".none")
+		if site == name || !have[site] {
+			_ = os.Remove(filepath.Join(dir, name))
+		}
+	}
+}

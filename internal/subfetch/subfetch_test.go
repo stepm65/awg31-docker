@@ -339,7 +339,12 @@ func TestHintForTypicalNetworkFailures(t *testing.T) {
 }
 
 func TestFetchCancelledAndTimeoutGiveReadableErrors(t *testing.T) {
-	s := newSrv(t, func(w http.ResponseWriter, r *http.Request) { <-r.Context().Done() })
+	// Сервер молчит, пока тест не закончится. На r.Context() не полагаемся: в CI на эмуляции
+	// arm64 обработчик однажды вернулся раньше таймаута клиента,
+	// и клиент получил пустой ответ 200 вместо таймаута.
+	hold := make(chan struct{})
+	s := newSrv(t, func(w http.ResponseWriter, r *http.Request) { <-hold })
+	t.Cleanup(func() { close(hold) }) // выполняется раньше s.Close из newSrv (порядок LIFO)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	_, _, _, err := Fetch(ctx, Options{URL: s.URL, AllowLoopback: true, PinSHA256: pinOf(s)}, "")

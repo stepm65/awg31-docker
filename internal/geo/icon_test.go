@@ -107,3 +107,34 @@ func TestIconFetchCacheAndRejects(t *testing.T) {
 		t.Fatal("адрес сервера проверяется")
 	}
 }
+
+func TestPruneIcons(t *testing.T) {
+	st := &Store{Dir: t.TempDir()}
+	dir := filepath.Join(st.Dir, "icons")
+	_ = os.MkdirAll(dir, 0o700)
+	for _, n := range []string{"keep.org.img", "keep2.org.none", "gone.org.img", "gone2.org.none", "junk.txt"} {
+		_ = os.WriteFile(filepath.Join(dir, n), []byte("x"), 0o600)
+	}
+	st.PruneIcons() // базы нет — ничего не удаляется
+	if ents, _ := os.ReadDir(dir); len(ents) != 5 {
+		t.Fatalf("без базы кеш не трогаем: %d", len(ents))
+	}
+	pb := func(v []byte) []byte { return append([]byte{0x0a, byte(len(v))}, v...) }
+	var data []byte
+	for _, c := range []string{"KEEP.ORG", "KEEP2.ORG", "MESSENGERS"} {
+		e := pb([]byte(c))
+		data = append(data, append([]byte{0x0a, byte(len(e))}, e...)...)
+	}
+	if err := os.WriteFile(filepath.Join(st.Dir, "geosite.dat"), data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	st.PruneIcons()
+	ents, _ := os.ReadDir(dir)
+	var left []string
+	for _, e := range ents {
+		left = append(left, e.Name())
+	}
+	if len(left) != 2 || left[0] != "keep.org.img" || left[1] != "keep2.org.none" {
+		t.Fatalf("остались: %v", left)
+	}
+}
