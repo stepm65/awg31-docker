@@ -314,6 +314,7 @@ func run() error {
 		}()
 	}
 
+	go guardLocalRule(ctx, runner, topts.IPv6, logf)
 	go subs.Run(ctx)
 	go pol.Run(ctx)
 	go mon.Run(ctx)
@@ -539,6 +540,23 @@ func geoUpdater(ctx context.Context, st *store.Store, g *geo.Store, pol *policy.
 		case <-timer.C:
 			check()
 			timer.Reset(time.Hour)
+		}
+	}
+}
+
+// guardLocalRule следит, чтобы правило «lookup local» не пропадало (см.
+// tunnel.EnsureLocalRule): без него контейнер не отвечает ни роутеру, ни себе.
+func guardLocalRule(ctx context.Context, r tunnel.Runner, ipv6 bool, logf func(string, ...any)) {
+	t := time.NewTicker(10 * time.Second)
+	defer t.Stop()
+	for {
+		if fixed := tunnel.EnsureLocalRule(ctx, r, ipv6); len(fixed) > 0 {
+			logf("ip rule 'lookup local' was missing (%s), restored: without it the container does not answer on its own addresses", strings.Join(fixed, " "))
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
 		}
 	}
 }

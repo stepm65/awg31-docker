@@ -109,6 +109,9 @@ fix_ip_rules() {
     ' | while read -r prio; do
         [ -n "$prio" ] && ip -4 rule del priority "$prio" 2>/dev/null || true
     done
+    # без «lookup local» контейнер не отвечает ни роутеру, ни на 127.0.0.1 (CHR, 0.9.0)
+    ip -4 rule show 2>/dev/null | grep -q 'lookup local' || { ip -4 rule add priority 0 lookup local 2>/dev/null && log "ip rule 'lookup local' was missing, restored"; } || true
+    ip -6 rule show 2>/dev/null | grep -q 'lookup local' || ip -6 rule add priority 0 lookup local 2>/dev/null || true
     ip -4 rule show 2>/dev/null | grep -q 'from all lookup main' || ip -4 rule add lookup main priority 32766 2>/dev/null || true
     ip -4 rule show 2>/dev/null | grep -q 'from all lookup default' || ip -4 rule add lookup default priority 32767 2>/dev/null || true
 }
