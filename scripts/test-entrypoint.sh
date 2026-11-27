@@ -31,12 +31,14 @@ if [ "\$1" = "-w" ]; then k=\${2%%=*}; v=\${2#*=}; printf '%s' "\$v" > "$t/sys/\
 exit 1
 S
     # ip rule: в RouterOS-сценарии есть лишнее «lookup main» с приоритетом 10
-    if [ "$preset" = 0 ]; then printf '0:\tfrom all lookup local\n10:\tfrom all lookup main\n32766:\tfrom all lookup main\n32767:\tfrom all lookup default\n' > "$t/rules"
+    # и нет «lookup local» (так было на CHR после обновления до 0.9.0)
+    if [ "$preset" = 0 ]; then printf '10:\tfrom all lookup main\n32766:\tfrom all lookup main\n32767:\tfrom all lookup default\n' > "$t/rules"
     else printf '0:\tfrom all lookup local\n32766:\tfrom all lookup main\n32767:\tfrom all lookup default\n' > "$t/rules"; fi
     cat > "$t/bin/ip" <<S
 #!/bin/sh
 case "\$*" in
   "-4 rule show") cat "$t/rules" ;;
+  "-6 rule show") printf '0:\tfrom all lookup local\n' ;;
   "-o -4 route show default") echo "default via 192.168.253.1 dev eth0 proto static" ;;
   "-o -4 route show default dev eth0") echo "default via 192.168.253.1 dev eth0 proto static" ;;
   "-o -4 addr show dev eth0") echo "2: eth0    inet 192.168.253.2/30 brd 192.168.253.3 scope global eth0" ;;
@@ -65,6 +67,7 @@ S
     [ "$(cat "$t/sys/net.ipv6.conf.all.forwarding")" = 1 ] && ok "$name: пересылка IPv6 включена" || bad "$name: ipv6 forwarding"
     [ "$(cat "$t/sys/net.ipv6.conf.eth0.accept_ra" 2>/dev/null)" = 2 ] && ok "$name: accept_ra=2 на LAN" || bad "$name: accept_ra"
     if [ "$preset" = 0 ]; then
+        grep -q '^-4 rule add priority 0 lookup local$' "$t/ip.log" && ok "$name: пропавшее правило lookup local возвращено" || bad "$name: lookup local не возвращено: $(cat "$t/ip.log")"
         grep -q '^del 10$' "$t/ip.log" 2>/dev/null && ok "$name: лишнее правило lookup main удалено" || bad "$name: ip rule 10 не удалено"
         grep -q '^-6 addr add fd00:192:168:253::2/64 dev eth0$' "$t/ip.log" && grep -q '^-6 route add default via fd00:192:168:253::1 dev eth0 metric 2048$' "$t/ip.log" \
             && ok "$name: ULA fd00:192:168:253::2/64 выведен из IPv4" || bad "$name: ULA: $(cat "$t/ip.log")"
