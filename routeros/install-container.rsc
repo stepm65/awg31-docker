@@ -43,13 +43,22 @@
 #     они небольшие). После перезагрузки роутера содержимое tmp1 пропадает: выполните
 #     `/container/remove [find name=awg31]` и запустите скрипт снова.
 # Сообщения скрипта на английском: терминалы RouterOS (SSH, serial) часто не выводят кириллицу.
-# ВАЖНО: значения задаются ЗДЕСЬ, в файле. Команда `:local tarfile ...` в консоли в импортируемый
-# скрипт не передаётся.
+# ВАЖНО: значения задаются здесь, в файле. Команда `:local tarfile ...` в консоли в импортируемый
+# скрипт не передаётся. Без правки файла их можно задать глобальными переменными перед импортом:
+#   :global AWG31DISK ""        (пусто — встроенная память; на CHR обычно так)
+#   :global AWG31TAR "awg31-0.8.3-linux-amd64.tar"
+#   :global AWG31DATADIR "awg31/data"
 # Офлайн-установка: путь к .tar нужной архитектуры (awg31-0.8.3-linux-arm64.tar,
 # awg31-0.8.3-linux-arm-v7.tar или awg31-0.8.3-linux-amd64.tar для CHR). Пусто — образ скачивается из реестра.
 :local tarfile ""
 # Куда класть данные (профили, пароль, сертификат). Пусто — рядом с образом (<disk>/awg31/data).
 :local datadir ""
+:global AWG31DISK
+:global AWG31TAR
+:global AWG31DATADIR
+:if ([:typeof $AWG31DISK] = "str") do={ :set disk $AWG31DISK }
+:if ([:typeof $AWG31TAR] = "str") do={ :set tarfile $AWG31TAR }
+:if ([:typeof $AWG31DATADIR] = "str") do={ :set datadir $AWG31DATADIR }
 # Образ в реестре (многоархитектурный: RouterOS берёт arm64, arm или amd64 сам).
 # Если ваша версия не принимает реестр в имени, задайте
 # /container/config/set registry-url=https://ghcr.io и укажите имя без ghcr.io/.
@@ -72,7 +81,7 @@
 :if ([:len $disk] > 0) do={
   :local diskOk false
   :do { :if ([:len [/disk/find where slot=$disk]] > 0) do={ :set diskOk true } } on-error={ :set diskOk ([:len [/file/find name=$disk]] > 0) }
-  :if (!$diskOk) do={ :error ("disk " . $disk . " not found (see /disk/print). Edit :local disk at the top of this file: usb1 is only an example; a RAM disk is /disk/add type=tmpfs tmpfs-max-size=100M, then :local disk \"tmp1\"") }
+  :if (!$diskOk) do={ :error ("disk " . $disk . " not found (see /disk/print). Edit :local disk at the top of this file or set :global AWG31DISK \"\" for internal storage: usb1 is only an example; a RAM disk is /disk/add type=tmpfs tmpfs-max-size=100M, then :local disk \"tmp1\"") }
 }
 :if ([:len $disk] = 0) do={
   :local free [/system/resource/get free-hdd-space]
