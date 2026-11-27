@@ -46,10 +46,10 @@
 # ВАЖНО: значения задаются здесь, в файле. Команда `:local tarfile ...` в консоли в импортируемый
 # скрипт не передаётся. Без правки файла их можно задать глобальными переменными перед импортом:
 #   :global AWG31DISK ""        (пусто — встроенная память; на CHR обычно так)
-#   :global AWG31TAR "awg31-0.9.1-linux-amd64.tar"
+#   :global AWG31TAR "awg31-0.9.2-linux-amd64.tar"
 #   :global AWG31DATADIR "awg31/data"
-# Офлайн-установка: путь к .tar нужной архитектуры (awg31-0.9.1-linux-arm64.tar,
-# awg31-0.9.1-linux-arm-v7.tar или awg31-0.9.1-linux-amd64.tar для CHR). Пусто — образ скачивается из реестра.
+# Офлайн-установка: путь к .tar нужной архитектуры (awg31-0.9.2-linux-arm64.tar,
+# awg31-0.9.2-linux-arm-v7.tar или awg31-0.9.2-linux-amd64.tar для CHR). Пусто — образ скачивается из реестра.
 :local tarfile ""
 # Куда класть данные (профили, пароль, сертификат). Пусто — рядом с образом (<disk>/awg31/data).
 :local datadir ""
@@ -62,7 +62,7 @@
 # Образ в реестре (многоархитектурный: RouterOS берёт arm64, arm или amd64 сам).
 # Если ваша версия не принимает реестр в имени, задайте
 # /container/config/set registry-url=https://ghcr.io и укажите имя без ghcr.io/.
-:local image "ghcr.io/stepm65/awg31-docker:0.9.1"
+:local image "ghcr.io/stepm65/awg31-docker:0.9.2"
 # Адреса veth: контейнер .2, роутер .1.
 :local cip "192.168.253.2"
 :local rip "192.168.253.1"
