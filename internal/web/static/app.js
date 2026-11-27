@@ -578,7 +578,7 @@ function fmtBytes(n) {
   let i = 0;
   n = Number(n) || 0;
   while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
-  return (i ? n.toFixed(1) : String(n)) + " " + u[i];
+  return (i ? n.toFixed(1) : String(Math.round(n))) + " " + u[i];
 }
 function fmtAgo(unix) {
   if (!unix) return t("never");
@@ -949,7 +949,7 @@ function pageOverview() {
   for (const p of list) { const a = agg(p); rx += a.rx; tx += a.tx; hs = Math.max(hs, a.hs); }
   const sum = summary(list, c);
   announce(t("level_" + sum.level) + ": " + sum.head);
-  const hist = S.hist, rate = (k) => (hist.length > 1 ? t("rateNow", { v: fmtBytes(hist[hist.length - 1][k]) + t("perSec") }) : t("statSumNote"));
+  const hist = S.hist, rate = (k) => (hist.length > 1 ? t("rateNow", { v: fmtRate(hist[hist.length - 1][k]) }) : t("statSumNote"));
   const hsFresh = hs && Math.floor(Date.now() / 1000 - hs) <= HS_FRESH;
   const stale = S.missed >= 3; // данные устарели: плитки без цветового уровня, чтобы не показывать «норму» по старым цифрам
   return h("div", {},
