@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/netip"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -382,4 +383,41 @@ func (m *Manager) Run(ctx context.Context) {
 		_ = m.Sync(sctx)
 		cancel()
 	}
+}
+
+// Lease — аренда DHCP роутера (для справочника устройств).
+type Lease struct {
+	Addr     string `json:"addr"`
+	MAC      string `json:"mac,omitempty"`
+	HostName string `json:"host_name,omitempty"`
+	Comment  string `json:"comment,omitempty"`
+	Dynamic  bool   `json:"dynamic"`
+}
+
+// Leases читает аренды DHCP-сервера роутера (/ip/dhcp-server/lease). Нужны права
+// на чтение; интеграция при этом может быть выключена, важно лишь подключение.
+func (m *Manager) Leases(ctx context.Context, r store.Router) ([]Lease, error) {
+	m.init()
+	c, err := m.NewClient(connOf(r))
+	if err != nil {
+		return nil, err
+	}
+	rows, err := c.Print(ctx, "/ip/dhcp-server/lease", nil)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Lease, 0, len(rows))
+	for _, row := range rows {
+		a, err := netip.ParseAddr(row["address"])
+		if err != nil {
+			continue
+		}
+		out = append(out, Lease{Addr: a.String(), MAC: row["mac-address"], HostName: row["host-name"], Comment: row["comment"], Dynamic: row["dynamic"] == "true"})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		a, _ := netip.ParseAddr(out[i].Addr)
+		b, _ := netip.ParseAddr(out[j].Addr)
+		return a.Less(b)
+	})
+	return out, nil
 }

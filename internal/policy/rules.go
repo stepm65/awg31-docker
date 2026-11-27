@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"net/netip"
 	"regexp"
+	"slices"
+	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -31,7 +34,24 @@ const (
 	KindCIDR    Kind = "cidr"
 )
 
+// PortRange — порт или диапазон портов назначения.
+type PortRange struct {
+	Lo uint16 `json:"lo"`
+	Hi uint16 `json:"hi"`
+}
+
+func (p PortRange) String() string {
+	if p.Lo == p.Hi {
+		return strconv.Itoa(int(p.Lo))
+	}
+	return fmt.Sprintf("%d-%d", p.Lo, p.Hi)
+}
+
 // Rule — одно правило.
+//
+// Src, Ports и Net сужают правило: только трафик с этих устройств или адресов,
+// на эти порты, этим протоколом. Такие правила живут в своих таблицах и
+// проверяются раньше общих (более точное правило побеждает).
 type Rule struct {
 	Line   int          `json:"line"`
 	Action Action       `json:"action"`
@@ -39,6 +59,32 @@ type Rule struct {
 	Kind   Kind         `json:"kind"`
 	Value  string       `json:"value"`
 	Prefix netip.Prefix `json:"-"`
+	Src    []string     `json:"src,omitempty"`   // @устройство или IP/сеть
+	Ports  []PortRange  `json:"ports,omitempty"` // порты назначения
+	Net    []string     `json:"net,omitempty"`   // tcp, udp (пусто — любой; с портами — оба)
+}
+
+// Scoped сообщает, что правило сужено устройствами, портами или протоколом.
+func (r Rule) Scoped() bool { return len(r.Src) > 0 || len(r.Ports) > 0 || len(r.Net) > 0 }
+
+// Scope — сужающая часть правила в каноническом виде («src=@pc port=443 net=tcp»);
+// пустая строка для общего правила.
+func (r Rule) Scope() string {
+	var parts []string
+	if len(r.Src) > 0 {
+		parts = append(parts, "src="+strings.Join(r.Src, ","))
+	}
+	if len(r.Ports) > 0 {
+		ps := make([]string, len(r.Ports))
+		for i, p := range r.Ports {
+			ps[i] = p.String()
+		}
+		parts = append(parts, "port="+strings.Join(ps, ","))
+	}
+	if len(r.Net) > 0 {
+		parts = append(parts, "net="+strings.Join(r.Net, ","))
+	}
+	return strings.Join(parts, " ")
 }
 
 // String — правило в каноническом виде.
@@ -47,7 +93,11 @@ func (r Rule) String() string {
 	if r.Target != "" {
 		a += "@" + r.Target
 	}
-	return a + " " + string(r.Kind) + ":" + r.Value
+	s := a + " " + string(r.Kind) + ":" + r.Value
+	if sc := r.Scope(); sc != "" {
+		s += " " + sc
+	}
+	return s
 }
 
 // LineError — ошибка в строке правил.
@@ -68,7 +118,11 @@ var (
 const (
 	MaxRulesBytes = 64 << 10
 	MaxRules      = 2000
+	MaxRuleSrc    = 32 // устройств и адресов в одном правиле
+	MaxRulePorts  = 16
 )
+
+var reDeviceRef = regexp.MustCompile(`^@[a-z0-9][a-z0-9_-]{0,31}$`)
 
 // Parse разбирает правила. Формат строки: «ДЕЙСТВИЕ УСЛОВИЕ [комментарий]»
 // или «ДЕЙСТВИЕ,УСЛОВИЕ[,комментарий]»; # — комментарий до конца строки.
@@ -89,21 +143,30 @@ func Parse(text string) ([]Rule, []LineError) {
 			continue
 		}
 		var act, cond string
-		if strings.Contains(line, ",") {
+		var mods []string
+		f := strings.Fields(line)
+		if strings.Contains(f[0], ",") {
+			// «ДЕЙСТВИЕ,УСЛОВИЕ[,…]» (формат списков Clash); уточнений у него нет
 			parts := strings.SplitN(line, ",", 3)
 			act = strings.TrimSpace(parts[0])
 			if len(parts) > 1 {
 				cond = strings.TrimSpace(parts[1])
 			}
 		} else {
-			f := strings.Fields(line)
 			act = f[0]
 			if len(f) > 1 {
 				cond = f[1]
 			}
+			if len(f) > 2 {
+				mods = f[2:]
+			}
 		}
 		r := Rule{Line: n}
 		var err string
+		if err = parseMods(&r, mods); err != "" {
+			errs = append(errs, LineError{n, err})
+			continue
+		}
 		if r.Action, r.Target, err = parseAction(act); err != "" {
 			errs = append(errs, LineError{n, err})
 			continue
@@ -122,6 +185,89 @@ func Parse(text string) ([]Rule, []LineError) {
 		}
 	}
 	return rules, errs
+}
+
+// parseMods разбирает уточнения после условия: src=@устройство,IP,сеть port=443,8000-8100 net=tcp,udp.
+func parseMods(r *Rule, mods []string) string {
+	seen := map[string]bool{}
+	for _, m := range mods {
+		k, v, ok := strings.Cut(m, "=")
+		k = strings.ToLower(k)
+		if !ok || v == "" {
+			return "непонятное уточнение «" + m + "»: src=, port= или net="
+		}
+		if seen[k] {
+			return "уточнение " + k + "= повторяется"
+		}
+		seen[k] = true
+		items := strings.Split(v, ",")
+		switch k {
+		case "src":
+			if len(items) > MaxRuleSrc {
+				return fmt.Sprintf("src=: не больше %d устройств и адресов", MaxRuleSrc)
+			}
+			for _, it := range items {
+				it = strings.ToLower(strings.TrimSpace(it))
+				switch {
+				case reDeviceRef.MatchString(it):
+					r.Src = append(r.Src, it)
+				default:
+					p, okp := prefixOf(it)
+					if !okp {
+						return "src=: «" + it + "» — не @устройство, не IP и не сеть"
+					}
+					r.Src = append(r.Src, p.String())
+				}
+			}
+		case "port", "dport":
+			if len(items) > MaxRulePorts {
+				return fmt.Sprintf("port=: не больше %d портов и диапазонов", MaxRulePorts)
+			}
+			for _, it := range items {
+				lo, hi, rng := strings.Cut(strings.TrimSpace(it), "-")
+				a, e1 := strconv.Atoi(lo)
+				b := a
+				var e2 error
+				if rng {
+					b, e2 = strconv.Atoi(hi)
+				}
+				if e1 != nil || e2 != nil || a < 1 || b > 65535 || a > b {
+					return "port=: «" + it + "» — порт 1–65535 или диапазон, например 8000-8100"
+				}
+				r.Ports = append(r.Ports, PortRange{uint16(a), uint16(b)})
+			}
+		case "net", "network", "proto":
+			for _, it := range items {
+				it = strings.ToLower(strings.TrimSpace(it))
+				if it != "tcp" && it != "udp" {
+					return "net=: tcp, udp или tcp,udp"
+				}
+				if !slices.Contains(r.Net, it) {
+					r.Net = append(r.Net, it)
+				}
+			}
+			sort.Strings(r.Net)
+		default:
+			return "неизвестное уточнение «" + k + "=»: src=, port= или net="
+		}
+	}
+	return ""
+}
+
+// DeviceRefs возвращает идентификаторы устройств (без @), на которые ссылаются правила.
+func DeviceRefs(rules []Rule) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, r := range rules {
+		for _, s := range r.Src {
+			if id, ok := strings.CutPrefix(s, "@"); ok && !seen[id] {
+				seen[id] = true
+				out = append(out, id)
+			}
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 func parseAction(s string) (Action, string, string) {

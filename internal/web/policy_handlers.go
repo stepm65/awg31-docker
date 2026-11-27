@@ -80,7 +80,16 @@ func (s *Server) handlePutPolicy(w http.ResponseWriter, r *http.Request, _ strin
 		return
 	}
 	p.DefaultAction = strings.ToLower(strings.TrimSpace(p.DefaultAction))
-	if errs := validatePolicy(p, s.cfg.AllowHTTPSubs); len(errs) > 0 {
+	errs := validatePolicy(p, s.cfg.AllowHTTPSubs)
+	if len(errs) == 0 {
+		snap := s.cfg.Store.Snapshot()
+		for _, id := range deviceRefs(p.Rules) {
+			if _, ok := snap.DeviceByID(id); !ok {
+				errs = append(errs, "устройства @"+id+" нет в справочнике: добавьте его на странице «Устройства»")
+			}
+		}
+	}
+	if len(errs) > 0 {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": errs[0], "errors": errs})
 		return
 	}

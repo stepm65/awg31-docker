@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -57,6 +58,7 @@ type learned struct {
 	target  string
 	by      string
 	expires time.Time
+	line    int // строка правила (для счётчиков)
 }
 
 // Stats — счётчики для UI.
@@ -89,20 +91,28 @@ type Engine struct {
 	mu      sync.RWMutex
 	enabled bool
 	def     Action
-	rules   []Rule
+	rules   []Rule // общие правила (без src=, port=, net=)
+	all     []Rule // все правила по порядку
+	scopes  []*scope
+	snotes  []string // заметки о суженных правилах (неизвестные устройства и т. п.)
 	learned map[netip.Addr]learned
-	applied map[string]string // "4 1.2.3.0/24" -> спецификация маршрута
-	fresh   bool              // applied совпадает с таблицей
-	stats   Stats
-	dirty   chan struct{}
-	once    sync.Once
-	subs    []func()
-	force   bool // переложить все маршруты заново (ядро могло их потерять)
+	// learnedScoped — адреса из DNS для доменных правил областей: ключ области -> адрес
+	learnedScoped map[string]map[netip.Addr]learned
+	appliedScoped map[int]map[string]string // таблица области -> маршруты
+	appliedRules  map[string]bool           // «4 аргументы ip rule» областей
+	applied       map[string]string         // "4 1.2.3.0/24" -> спецификация маршрута
+	fresh         bool                      // applied совпадает с таблицей
+	stats         Stats
+	dirty         chan struct{}
+	once          sync.Once
+	subs          []func()
+	force         bool // переложить все маршруты заново (ядро могло их потерять)
 }
 
 func (e *Engine) init() {
 	e.once.Do(func() {
 		e.learned, e.applied = map[netip.Addr]learned{}, map[string]string{}
+		e.learnedScoped, e.appliedScoped, e.appliedRules = map[string]map[netip.Addr]learned{}, map[int]map[string]string{}, map[string]bool{}
 		e.dirty = make(chan struct{}, 1)
 		if e.Now == nil {
 			e.Now = time.Now
@@ -168,13 +178,35 @@ func (e *Engine) Reload() error {
 			geoErr = e.Geo.Load(sites, ips)
 		}
 	}
+	devices := map[string]netip.Prefix{}
+	for _, d := range e.Store.Snapshot().Devices {
+		if p, ok := d.Prefix(); ok {
+			devices[d.ID] = p
+		}
+	}
+	scopes, snotes := buildScopes(rules, devices)
+	global := make([]Rule, 0, len(rules))
+	for _, r := range rules {
+		if !r.Scoped() {
+			global = append(global, r)
+		}
+	}
 	e.mu.Lock()
 	e.enabled = p.Enabled
 	e.def = Proxy
 	if p.DefaultAction == "direct" {
 		e.def = Direct
 	}
-	e.rules = rules
+	e.rules, e.all, e.scopes, e.snotes = global, rules, scopes, snotes
+	keep := map[string]bool{}
+	for _, sc := range scopes {
+		keep[sc.key] = true
+	}
+	for k := range e.learnedScoped {
+		if !keep[k] {
+			delete(e.learnedScoped, k) // область исчезла вместе с правилами
+		}
+	}
 	e.mu.Unlock()
 	e.MarkDirty()
 	return geoErr
@@ -267,6 +299,13 @@ func (e *Engine) Learn(action Action, target, by string, addrs []netip.Addr, ttl
 	exp := e.Now().Add(ttl)
 	changed := false
 	e.mu.Lock()
+	line := 0
+	for _, r := range e.rules {
+		if string(r.Kind)+":"+r.Value == by {
+			line = r.Line
+			break
+		}
+	}
 	for _, a := range addrs {
 		a = a.Unmap()
 		if !a.IsGlobalUnicast() || a.IsPrivate() {
@@ -279,7 +318,7 @@ func (e *Engine) Learn(action Action, target, by string, addrs []netip.Addr, ttl
 		if !ok || old.action != action || old.target != target {
 			changed = true
 		}
-		e.learned[a] = learned{action, target, by, exp}
+		e.learned[a] = learned{action, target, by, exp, line}
 	}
 	e.mu.Unlock()
 	if changed {
@@ -309,7 +348,13 @@ func (e *Engine) Stats() Stats {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 	s := e.stats
-	s.Enabled, s.Default, s.Rules, s.Learned, s.Routes = e.enabled, strings.ToLower(string(e.def)), len(e.rules), len(e.learned), len(e.applied)
+	s.Enabled, s.Default, s.Rules, s.Learned, s.Routes = e.enabled, strings.ToLower(string(e.def)), len(e.all), len(e.learned), len(e.applied)
+	for _, m := range e.learnedScoped {
+		s.Learned += len(m)
+	}
+	for _, m := range e.appliedScoped {
+		s.Routes += len(m)
+	}
 	return s
 }
 
@@ -444,6 +489,14 @@ func (e *Engine) Expire() int {
 			n++
 		}
 	}
+	for _, m := range e.learnedScoped {
+		for a, l := range m {
+			if !l.expires.After(now) {
+				delete(m, a)
+				n++
+			}
+		}
+	}
 	return n
 }
 
@@ -507,10 +560,12 @@ func (e *Engine) Apply(ctx context.Context) error {
 			for _, fam := range fams {
 				_, _ = e.Runner.Run(ctx, "ip", fam, "rule", "del", "priority", prio)
 				_, _ = e.Runner.Run(ctx, "ip", fam, "route", "flush", "table", tbl)
+				e.dropScopes(ctx, fam)
 			}
 		}
 		e.mu.Lock()
 		e.applied, e.fresh = map[string]string{}, true
+		e.appliedScoped, e.appliedRules = map[int]map[string]string{}, map[string]bool{}
 		e.stats.LastError = ""
 		e.mu.Unlock()
 		return nil
@@ -552,6 +607,89 @@ func (e *Engine) Apply(ctx context.Context) error {
 			line(k, "route replace "+want[k]+" table "+tbl)
 		}
 	}
+	// области: свои таблицы и ip rule
+	splans, snotes := e.planScopes(lan, o.KillSwitch, o.IPv6)
+	e.mu.RLock()
+	prevS, prevR := e.appliedScoped, e.appliedRules
+	notes = append(notes, e.snotes...)
+	e.mu.RUnlock()
+	notes = append(notes, snotes...)
+	if !fresh {
+		prevS, prevR = map[int]map[string]string{}, map[string]bool{}
+		for _, fam := range fams {
+			for _, d := range e.cleanScopeRules(ctx, fam) {
+				if fam == "-6" {
+					b6.WriteString(d + "\n")
+				} else {
+					b4.WriteString(d + "\n")
+				}
+			}
+		}
+		for i := 0; i < MaxScopes; i++ {
+			b4.WriteString(fmt.Sprintf("route flush table %d\n", ScopeTableBase+i))
+			if o.IPv6 {
+				b6.WriteString(fmt.Sprintf("route flush table %d\n", ScopeTableBase+i))
+			}
+		}
+	}
+	wantS, wantR := map[int]map[string]string{}, map[string]bool{}
+	for _, pl := range splans {
+		wantS[pl.table] = pl.routes
+		for fam, rs := range pl.rules {
+			for _, r := range rs {
+				wantR[fmt.Sprintf("%d %s", fam, r)] = true
+			}
+		}
+	}
+	st := func(t int) string { return " table " + strconv.Itoa(t) }
+	for t, routes := range prevS {
+		if _, ok := wantS[t]; !ok {
+			for k, spec := range routes {
+				line(k, "route del "+spec+st(t))
+			}
+		}
+	}
+	tables := make([]int, 0, len(wantS))
+	for t := range wantS {
+		tables = append(tables, t)
+	}
+	sort.Ints(tables)
+	for _, t := range tables {
+		w, p := wantS[t], prevS[t]
+		for k, spec := range p {
+			if _, ok := w[k]; !ok {
+				line(k, "route del "+spec+st(t))
+			}
+		}
+		ks := make([]string, 0, len(w))
+		for k := range w {
+			ks = append(ks, k)
+		}
+		sort.Strings(ks)
+		for _, k := range ks {
+			if force || p[k] != w[k] {
+				line(k, "route replace "+w[k]+st(t))
+			}
+		}
+	}
+	// ip rule: сначала удалить ненужные, потом добавить новые
+	rkeys := make([]string, 0, len(wantR))
+	for k := range wantR {
+		rkeys = append(rkeys, k)
+	}
+	sort.Strings(rkeys)
+	for k := range prevR {
+		if !wantR[k] {
+			fam, args, _ := strings.Cut(k, " ")
+			line(fam+" ", "rule del "+args)
+		}
+	}
+	for _, k := range rkeys {
+		if !prevR[k] {
+			fam, args, _ := strings.Cut(k, " ")
+			line(fam+" ", "rule add "+args)
+		}
+	}
 	var errs []string
 	for i, b := range []*strings.Builder{&b4, &b6} {
 		if b.Len() == 0 {
@@ -579,6 +717,7 @@ func (e *Engine) Apply(ctx context.Context) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.applied = want
+	e.appliedScoped, e.appliedRules = wantS, wantR
 	e.force = false
 	e.fresh = len(errs) == len(notes) // ошибка ip -batch — в следующий раз полная перезаливка
 	e.stats.Gateway = lan.GW4
@@ -682,7 +821,7 @@ type Export struct {
 func (e *Engine) Export(limit, domainLimit int) Export {
 	e.init()
 	e.mu.RLock()
-	rules, enabled := e.rules, e.enabled
+	rules, enabled := e.all, e.enabled
 	now := e.Now()
 	var ex Export
 	for a, l := range e.learned {

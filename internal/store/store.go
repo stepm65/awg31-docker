@@ -204,6 +204,8 @@ type State struct {
 	Router *Router `json:"router,omitempty"`
 	// Groups — группы туннелей (балансировка и резерв по порядку).
 	Groups []Group `json:"groups,omitempty"`
+	// Devices — справочник устройств LAN (правила по устройствам, мониторинг).
+	Devices []Device `json:"devices,omitempty"`
 }
 
 // FailoverSettings возвращает действующие настройки резервирования.
@@ -219,7 +221,8 @@ func (s State) Configured() bool { return s.User != "" && s.PassHash != "" }
 
 func (s State) clone() State {
 	c := State{User: s.User, PassHash: s.PassHash, Subs: map[string]Sub{}, Up: map[string]bool{},
-		Priority: append([]string(nil), s.Priority...), Primary: s.Primary, Groups: cloneGroups(s.Groups)}
+		Priority: append([]string(nil), s.Priority...), Primary: s.Primary, Groups: cloneGroups(s.Groups),
+		Devices: append([]Device(nil), s.Devices...)}
 	if s.Failover != nil {
 		f := *s.Failover
 		c.Failover = &f

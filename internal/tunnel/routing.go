@@ -191,8 +191,14 @@ func (m *Manager) Table(name string) int {
 // туннели продолжают работать.
 func (m *Manager) SetPrimary(ctx context.Context, name string) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-	return m.setPrimaryLocked(ctx, name)
+	prev := m.primary
+	err := m.setPrimaryLocked(ctx, name)
+	now := m.primary
+	m.mu.Unlock()
+	if err == nil && prev != now {
+		m.changed() // правила с устройствами ведут PROXY прямо в основной туннель
+	}
+	return err
 }
 
 func (m *Manager) setPrimaryLocked(ctx context.Context, name string) error {
