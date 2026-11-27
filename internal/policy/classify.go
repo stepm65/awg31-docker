@@ -2,6 +2,9 @@ package policy
 
 import (
 	"net/netip"
+
+	"awg31/internal/geo"
+	"awg31/internal/store"
 	"strings"
 	"time"
 )
@@ -146,4 +149,51 @@ func Labels(text string) map[int]Label {
 		}
 	}
 	return out
+}
+
+// GeoExtra переводит наборы из настроек в вид пакета geo.
+func GeoExtra(p store.Policy) []geo.Extra {
+	out := make([]geo.Extra, 0, len(p.GeoExtra))
+	for _, e := range p.GeoExtra {
+		out = append(out, geo.Extra{Tag: e.Tag, URL: e.URL, Kind: e.Kind})
+	}
+	return out
+}
+
+// TestFor — «куда пойдёт» с учётом устройства, протокола и порта. src может быть
+// пустым: тогда правила с устройствами не подходят.
+func (e *Engine) TestFor(q string, src netip.Addr, proto string, port uint16) TestResult {
+	e.init()
+	q = strings.TrimSpace(q)
+	if a, err := netip.ParseAddr(q); err == nil {
+		v := e.Classify(src, a, proto, port)
+		return TestResult{Query: q, Action: v.Action, Target: v.Target, By: v.By, Line: v.Line}
+	}
+	h := NormalizeHost(q)
+	e.mu.RLock()
+	scopes, enabled := e.scopes, e.enabled
+	e.mu.RUnlock()
+	if enabled {
+		for _, sc := range scopes {
+			if !sc.matches(src.Unmap(), proto, port) {
+				continue
+			}
+			for _, r := range sc.rules {
+				if e.matchHost(r, h) {
+					return TestResult{Query: h, Action: r.Action, Target: r.Target, By: string(r.Kind) + ":" + r.Value, Line: r.Line}
+				}
+			}
+		}
+	}
+	act, tgt, by := e.MatchDomain(h)
+	line := 0
+	e.mu.RLock()
+	for _, r := range e.rules {
+		if string(r.Kind)+":"+r.Value == by {
+			line = r.Line
+			break
+		}
+	}
+	e.mu.RUnlock()
+	return TestResult{Query: h, Action: act, Target: tgt, By: by, Line: line}
 }

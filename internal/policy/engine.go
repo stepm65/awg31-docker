@@ -174,6 +174,7 @@ func (e *Engine) Reload() error {
 	}
 	var geoErr error
 	if e.Geo != nil {
+		e.Geo.SetExtra(GeoExtra(p))
 		sites, ips := Categories(rules)
 		if len(sites)+len(ips) > 0 {
 			geoErr = e.Geo.Load(sites, ips)
@@ -788,6 +789,8 @@ type TestResult struct {
 	Action Action `json:"action"`
 	Target string `json:"target,omitempty"`
 	By     string `json:"matched_by"`
+	Line   int    `json:"line,omitempty"`
+	Rule   string `json:"rule,omitempty"` // имя блока правила
 }
 
 // Test проверяет имя или IP по правилам.
@@ -795,10 +798,10 @@ func (e *Engine) Test(q string) TestResult {
 	q = strings.TrimSpace(q)
 	if a, err := netip.ParseAddr(q); err == nil {
 		act, tgt, by := e.MatchIP(a)
-		return TestResult{q, act, tgt, by}
+		return TestResult{Query: q, Action: act, Target: tgt, By: by}
 	}
 	act, tgt, by := e.MatchDomain(q)
-	return TestResult{NormalizeHost(q), act, tgt, by}
+	return TestResult{Query: NormalizeHost(q), Action: act, Target: tgt, By: by}
 }
 
 // LearnedAddr — выученный адрес с действием PROXY.

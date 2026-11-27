@@ -383,6 +383,7 @@ type Store struct {
 	missing []string
 	lastErr string
 	sources map[string]string
+	extra   []Extra
 }
 
 func (s *Store) sitePath() string { return filepath.Join(s.Dir, "geosite.dat") }
@@ -393,6 +394,9 @@ func (s *Store) Load(needSites, needIPs []string) error {
 	sites, ips := map[string]*Site{}, map[string]*IP{}
 	var missing []string
 	var errs []string
+	allSites, allIPs := needSites, needIPs
+	needSites, siteTags := s.splitExtra("geosite", needSites)
+	needIPs, ipTags := s.splitExtra("geoip", needIPs)
 	if len(needSites) > 0 {
 		data, err := os.ReadFile(s.sitePath())
 		switch {
@@ -426,12 +430,19 @@ func (s *Store) Load(needSites, needIPs []string) error {
 			}
 		}
 	}
-	for _, n := range needSites {
+	if sites == nil {
+		sites = map[string]*Site{}
+	}
+	if ips == nil {
+		ips = map[string]*IP{}
+	}
+	errs = append(errs, s.loadExtra(sites, ips, siteTags, ipTags)...)
+	for _, n := range allSites {
 		if sites[n] == nil {
 			missing = append(missing, "geosite:"+n)
 		}
 	}
-	for _, n := range needIPs {
+	for _, n := range allIPs {
 		if ips[n] == nil {
 			missing = append(missing, "geoip:"+n)
 		}

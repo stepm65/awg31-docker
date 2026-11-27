@@ -126,6 +126,15 @@ type Policy struct {
 	GeoSiteURL     string `json:"geosite_url"`
 	GeoIPURL       string `json:"geoip_url"`
 	GeoUpdateHours int    `json:"geo_update_hours"` // 0 — обновлять только вручную
+	// GeoExtra — дополнительные наборы geodata: в правилах geosite:тег:категория.
+	GeoExtra []GeoExtra `json:"geo_extra,omitempty"`
+}
+
+// GeoExtra — дополнительный набор geodata (проверяется пакетом geo).
+type GeoExtra struct {
+	Tag  string `json:"tag"`
+	URL  string `json:"url"`
+	Kind string `json:"kind"` // geosite | geoip
 }
 
 // DefaultPolicy — значения по умолчанию (как в a-amneziawg-mikrotik).
@@ -229,6 +238,7 @@ func (s State) clone() State {
 	}
 	if s.Policy != nil {
 		p := *s.Policy
+		p.GeoExtra = append([]GeoExtra(nil), p.GeoExtra...)
 		c.Policy = &p
 	}
 	if s.Router != nil {

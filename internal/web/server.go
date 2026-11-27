@@ -43,8 +43,10 @@ type Config struct {
 	Router   *ros.Manager
 	Geo      *geo.Store
 	Monitor  *monitor.Monitor
-	Sessions *auth.Sessions
-	Limiter  *auth.Limiter
+	// Autostart поднимает туннели, отмеченные в настройках (после восстановления копии).
+	Autostart func(ctx context.Context)
+	Sessions  *auth.Sessions
+	Limiter   *auth.Limiter
 
 	// SetupToken — одноразовый токен первичной настройки. Пустой, если пароль уже задан.
 	SetupToken string
@@ -142,6 +144,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/geo/icon", s.requireAuth(s.handleGeoIcon))
 	mux.HandleFunc("GET /api/monitor", s.requireAuth(s.handleMonitor))
 	mux.HandleFunc("GET /api/monitor/flows", s.requireAuth(s.handleMonitorFlows))
+	mux.HandleFunc("GET /api/policy/export", s.requireAuth(s.handleExportRules))
+	mux.HandleFunc("GET /api/backup", s.requireAuth(s.handleBackup))
+	mux.HandleFunc("POST /api/backup/restore", s.requireAuth(s.handleRestore))
 	mux.HandleFunc("GET /api/devices", s.requireAuth(s.handleGetDevices))
 	mux.HandleFunc("PUT /api/devices", s.requireAuth(s.handlePutDevices))
 	mux.HandleFunc("GET /api/devices/leases", s.requireAuth(s.handleDeviceLeases))

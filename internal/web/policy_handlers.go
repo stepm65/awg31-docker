@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"sort"
 	"strconv"
 	"strings"
@@ -16,12 +17,13 @@ import (
 )
 
 type policyView struct {
-	Settings store.Policy `json:"settings"`
-	Stats    policy.Stats `json:"stats"`
-	Geo      *geo.Status  `json:"geo,omitempty"`
-	Gateway  bool         `json:"gateway"`
-	DNS      bool         `json:"dns"`
-	Errors   []string     `json:"errors,omitempty"`
+	Settings store.Policy      `json:"settings"`
+	Stats    policy.Stats      `json:"stats"`
+	Geo      *geo.Status       `json:"geo,omitempty"`
+	GeoExtra []geo.ExtraStatus `json:"geo_extra"`
+	Gateway  bool              `json:"gateway"`
+	DNS      bool              `json:"dns"`
+	Errors   []string          `json:"errors,omitempty"`
 }
 
 func (s *Server) policyView() policyView {
@@ -30,9 +32,11 @@ func (s *Server) policyView() policyView {
 	if s.cfg.Policy != nil {
 		v.Stats = s.cfg.Policy.Stats()
 	}
+	v.GeoExtra = []geo.ExtraStatus{}
 	if s.cfg.Geo != nil {
 		g := s.cfg.Geo.Status()
 		v.Geo = &g
+		v.GeoExtra = s.cfg.Geo.ExtraStatus()
 	}
 	return v
 }
@@ -66,6 +70,9 @@ func validatePolicy(p store.Policy, allowHTTP bool) []string {
 	}
 	if p.GeoUpdateHours < 0 || p.GeoUpdateHours > 720 {
 		errs = append(errs, "период обновления баз: 0–720 часов")
+	}
+	if err := geo.ValidateExtra(policy.GeoExtra(p), allowHTTP); err != nil {
+		errs = append(errs, err.Error())
 	}
 	return errs
 }
@@ -130,6 +137,15 @@ func (s *Server) fetchMissingGeo(r *http.Request, p store.Policy) error {
 	if s.cfg.Geo == nil {
 		return nil
 	}
+	s.cfg.Geo.SetExtra(policy.GeoExtra(p))
+	if len(p.GeoExtra) > 0 {
+		ctx, cancel := timeout(r, 3*time.Minute)
+		err := s.cfg.Geo.DownloadExtra(ctx, true, s.cfg.AllowHTTPSubs)
+		cancel()
+		if err != nil {
+			return err
+		}
+	}
 	rules, _ := policy.Parse(p.Rules)
 	sites, ips := policy.Categories(rules)
 	gs := s.cfg.Geo.Status()
@@ -188,6 +204,9 @@ func (s *Server) handleGeoIcon(w http.ResponseWriter, r *http.Request, _ string)
 func (s *Server) handleTestPolicy(w http.ResponseWriter, r *http.Request, _ string) {
 	var body struct {
 		Query string `json:"query"`
+		Src   string `json:"src"`   // IP устройства или @id (необязательно)
+		Proto string `json:"proto"` // tcp | udp (необязательно)
+		Port  int    `json:"port"`
 	}
 	if !decode(w, r, &body, 1024) {
 		return
@@ -197,7 +216,46 @@ func (s *Server) handleTestPolicy(w http.ResponseWriter, r *http.Request, _ stri
 		writeErr(w, http.StatusBadRequest, "укажите домен или IP-адрес")
 		return
 	}
-	writeJSON(w, http.StatusOK, s.cfg.Policy.Test(q))
+	if body.Src == "" && body.Proto == "" && body.Port == 0 {
+		writeJSON(w, http.StatusOK, s.withLabel(s.cfg.Policy.TestFor(q, netip.Addr{}, "tcp", 443)))
+		return
+	}
+	var src netip.Addr
+	if id, ok := strings.CutPrefix(strings.TrimSpace(body.Src), "@"); ok {
+		d, found := s.cfg.Store.Snapshot().DeviceByID(id)
+		p, okp := d.Prefix()
+		if !found || !okp {
+			writeErr(w, http.StatusBadRequest, "устройства @"+id+" нет в справочнике")
+			return
+		}
+		src = p.Addr()
+	} else if body.Src != "" {
+		a, err := netip.ParseAddr(strings.TrimSpace(body.Src))
+		if err != nil {
+			writeErr(w, http.StatusBadRequest, "устройство: IP-адрес или @устройство")
+			return
+		}
+		src = a
+	}
+	proto := strings.ToLower(body.Proto)
+	if proto == "" {
+		proto = "tcp"
+	}
+	if (proto != "tcp" && proto != "udp") || body.Port < 0 || body.Port > 65535 {
+		writeErr(w, http.StatusBadRequest, "протокол tcp или udp, порт 0–65535")
+		return
+	}
+	writeJSON(w, http.StatusOK, s.withLabel(s.cfg.Policy.TestFor(q, src, proto, uint16(body.Port))))
+}
+
+// withLabel добавляет к ответу имя блока правила.
+func (s *Server) withLabel(t policy.TestResult) policy.TestResult {
+	if t.Line > 0 {
+		if lb, ok := policy.Labels(s.cfg.Store.Snapshot().PolicySettings().Rules)[t.Line]; ok {
+			t.Rule = lb.Name
+		}
+	}
+	return t
 }
 
 func (s *Server) handleGeoUpdate(w http.ResponseWriter, r *http.Request, _ string) {
@@ -208,7 +266,12 @@ func (s *Server) handleGeoUpdate(w http.ResponseWriter, r *http.Request, _ strin
 	ctx, cancel := timeout(r, 5*time.Minute)
 	defer cancel()
 	p := s.cfg.Store.Snapshot().PolicySettings()
-	if err := s.cfg.Geo.Download(ctx, p.GeoSiteURL, p.GeoIPURL, s.cfg.AllowHTTPSubs); err != nil {
+	s.cfg.Geo.SetExtra(policy.GeoExtra(p))
+	err := s.cfg.Geo.Download(ctx, p.GeoSiteURL, p.GeoIPURL, s.cfg.AllowHTTPSubs)
+	if xerr := s.cfg.Geo.DownloadExtra(ctx, false, s.cfg.AllowHTTPSubs); xerr != nil {
+		err = errors.Join(err, xerr)
+	}
+	if err != nil {
 		s.cfg.Logf("geo databases: %v", err)
 		writeErr(w, http.StatusBadGateway, "базы geo: "+err.Error())
 		return
@@ -257,7 +320,13 @@ func (s *Server) handleGeoCategories(w http.ResponseWriter, r *http.Request, _ s
 	items := []string{}
 	if len(q) >= 2 && len(q) <= 64 {
 		var prefix, inner []string
-		for _, c := range s.cfg.Geo.Categories(kind) {
+		cats := s.cfg.Geo.Categories(kind)
+		for _, e := range s.cfg.Geo.ExtraStatus() {
+			if e.Kind == kind {
+				cats = append(cats, s.cfg.Geo.ExtraCategories(kind, e.Tag)...)
+			}
+		}
+		for _, c := range cats {
 			switch {
 			case strings.HasPrefix(c, q):
 				prefix = append(prefix, c)

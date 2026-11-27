@@ -239,6 +239,7 @@ func run() error {
 
 	srv := web.New(web.Config{
 		Store: st, Tunnels: tm, Subs: subs, Failover: fo, Groups: grp, Policy: pol, Geo: geoStore, Router: rosMgr, Monitor: mon, DNSEnabled: dnsSrv != nil,
+		Autostart:      func(ctx context.Context) { autostart(ctx, st, tm, logf) },
 		Sessions:       auth.NewSessions(24*time.Hour, 64),
 		Limiter:        auth.NewLimiter(5, 2*time.Minute, time.Minute, 4096),
 		SetupToken:     setupToken,
@@ -474,6 +475,25 @@ func orDash(s string) string {
 func geoUpdater(ctx context.Context, st *store.Store, g *geo.Store, pol *policy.Engine, logf func(string, ...any)) {
 	check := func() {
 		p := st.Snapshot().PolicySettings()
+		// дополнительные наборы: недостающие — сразу, остальные — по периоду обновления
+		if len(p.GeoExtra) > 0 && p.Enabled {
+			g.SetExtra(policy.GeoExtra(p))
+			stale := false
+			for _, e := range g.ExtraStatus() {
+				if !e.File.Present || (p.GeoUpdateHours > 0 && time.Since(e.File.Updated) > time.Duration(p.GeoUpdateHours)*time.Hour) {
+					stale = true
+				}
+			}
+			if stale {
+				dctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+				if err := g.DownloadExtra(dctx, false, false); err != nil {
+					logf("geo extra sets: %v", err)
+				} else if err := pol.Reload(); err != nil {
+					logf("policy: geo databases: %v", err)
+				}
+				cancel()
+			}
+		}
 		rules, _ := policy.Parse(p.Rules)
 		sites, ips := policy.Categories(rules)
 		if !p.Enabled || len(sites)+len(ips) == 0 {
