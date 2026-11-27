@@ -252,6 +252,11 @@ func Fetch(ctx context.Context, o Options, etag string) (body, newETag string, n
 		return "", "", false, explain(u.Host, stripURL(err))
 	}
 	defer resp.Body.Close()
+	// запрос отменили, пока шёл ответ: результат уже никому не нужен, и отмена
+	// должна дойти до вызывающего как отмена, а не как «пустой ответ»
+	if err := req.Context().Err(); err != nil {
+		return "", "", false, err
+	}
 
 	if resp.StatusCode == http.StatusNotModified {
 		return "", etag, true, nil
@@ -265,6 +270,9 @@ func Fetch(ctx context.Context, o Options, etag string) (body, newETag string, n
 	}
 	if len(raw) > MaxBody {
 		return "", "", false, fmt.Errorf("ответ больше %d КиБ", MaxBody>>10)
+	}
+	if err := req.Context().Err(); err != nil {
+		return "", "", false, err
 	}
 	text := strings.TrimSpace(string(raw))
 	if text == "" {
