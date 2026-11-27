@@ -76,7 +76,8 @@ const I18N = {
     ago_s: "{n} с назад", ago_m: "{n} мин назад", ago_h: "{n} ч назад", ago_d: "{n} дн назад",
     loading: "Загрузка…", yes: "да", no: "нет", back: "К списку", confirmDelete: "Подтвердить удаление",
     version: "Версия", language: "Язык", close: "Закрыть",
-    navInfra: "ИНФРАСТРУКТУРА", navProfiles: "ПРОФИЛИ", navSystem: "СИСТЕМА", navDevices: "Устройства", navMonitor: "Мониторинг", ssWorking: "работает", ssIdle: "нет туннелей", ssCpu: "Процессор", ssMem: "Память контейнера", ssConns: "Соединений клиентов", ssUptime: "Время работы",
+    navInfra: "ИНФРАСТРУКТУРА", navProfiles: "ПРОФИЛИ", navSystem: "СИСТЕМА", navDevices: "Устройства", navMonitor: "Мониторинг", ovTunnels: "Туннели и группы", ovRules: "Правила маршрутизации", ovAllRules: "Все правила", ovAllDevices: "Все устройства",
+    ovNoRules: "По правилам сейчас нет соединений.", ovConnsHint: "Соединений клиентов через туннель", ovBalance: "балансировка", ovOrdered: "по порядку", ssWorking: "работает", ssIdle: "нет туннелей", ssCpu: "Процессор", ssMem: "Память контейнера", ssConns: "Соединений клиентов", ssUptime: "Время работы",
     monTitle: "Мониторинг", monSub: "Трафик, устройства, правила и туннели по соединениям клиентов.",
     monTraffic: "Трафик", monWin15: "15 минут", monWin60: "1 час", monPeak: "пик", monDown: "загрузка", monUp: "отдача",
     monVpn: "через VPN", monNoData: "Замеров пока нет: первые точки появятся через несколько секунд.",
@@ -284,7 +285,8 @@ const I18N = {
     ago_s: "{n}s ago", ago_m: "{n}m ago", ago_h: "{n}h ago", ago_d: "{n}d ago",
     loading: "Loading…", yes: "yes", no: "no", back: "Back to list", confirmDelete: "Confirm deletion",
     version: "Version", language: "Language", close: "Close",
-    navInfra: "INFRASTRUCTURE", navProfiles: "PROFILES", navSystem: "SYSTEM", navDevices: "Devices", navMonitor: "Monitoring", ssWorking: "running", ssIdle: "no tunnels", ssCpu: "CPU", ssMem: "Container memory", ssConns: "Client connections", ssUptime: "Uptime",
+    navInfra: "INFRASTRUCTURE", navProfiles: "PROFILES", navSystem: "SYSTEM", navDevices: "Devices", navMonitor: "Monitoring", ovTunnels: "Tunnels and groups", ovRules: "Routing rules", ovAllRules: "All rules", ovAllDevices: "All devices",
+    ovNoRules: "No connections by rules right now.", ovConnsHint: "Client connections through the tunnel", ovBalance: "balance", ovOrdered: "ordered", ssWorking: "running", ssIdle: "no tunnels", ssCpu: "CPU", ssMem: "Container memory", ssConns: "Client connections", ssUptime: "Uptime",
     monTitle: "Monitoring", monSub: "Traffic, devices, rules and tunnels by client connections.",
     monTraffic: "Traffic", monWin15: "15 minutes", monWin60: "1 hour", monPeak: "peak", monDown: "download", monUp: "upload",
     monVpn: "via VPN", monNoData: "No samples yet: the first points appear in a few seconds.",
@@ -931,9 +933,61 @@ function pageOverview() {
       statCard(t("statRx"), fmtBytes(rx), rate("drx"), { tone: "rx", series: hist.slice(1).map((x) => x.drx) }),
       statCard(t("statTx"), fmtBytes(tx), rate("dtx"), { tone: "tx", series: hist.slice(1).map((x) => x.dtx) }),
       statCard(t("statHandshake"), hs ? fmtAgo(hs) : "—", t("statHandshakeNote"), { level: up && !stale ? (hsFresh ? "ok" : "warn") : null })),
+    list.length ? overviewCards(list) : null,
     h("div", { class: "section-title" }, h("h2", {}, t("profilesTitle")),
       h("a", { href: "#/profiles" }, t("manageAll") + " →")),
     list.length ? h("div", { class: "inst-grid" }, list.map(profileCard)) : emptyState());
+}
+
+// «Обзор»: трафик, туннели и группы, правила и устройства по соединениям.
+function overviewCards(list) {
+  if (!S.mon) loadMonitor(true);
+  if (!S.flows) loadFlows(true);
+  if (!S.grp) loadGroups(true);
+  const f = S.flows, m = S.mon;
+  const outConns = {};
+  for (const o of (f && f.outs) || []) outConns[o.id] = o.conns;
+  const more = (href, label) => h("a", { class: "card-link", href }, label + " →");
+  const tunRow = (p) => {
+    const a = agg(p), s2 = tunnelState(p);
+    return h("a", { class: "ov-row" + (p.primary ? " is-primary" : ""), href: "#/p/" + encodeURIComponent(p.name) },
+      h("span", { class: "dot" + ({ live: " on", wait: " warn", error: " crit" }[s2.key] || "") }),
+      h("span", { class: "ov-name" }, p.name, p.primary ? h("span", { class: "pill pill-warn" }, t("primary")) : null),
+      h("span", { class: "ov-chip", title: t("ovConnsHint") }, icon("link", 13), outConns["out:" + p.name] != null ? String(outConns["out:" + p.name]) : "—"),
+      h("span", { class: "ov-chip", title: t("handshake") }, icon("clock", 13), a.hs ? fmtAgo(a.hs) : "—"));
+  };
+  const groups = (S.grp && S.grp.groups) || [];
+  const grpRow = (g) => h("a", { class: "ov-row", href: "#/groups" },
+    h("span", { class: "ov-ic" }, icon("merge", 15)),
+    h("span", { class: "ov-name" }, g.name, h("span", { class: "muted" }, " · " + g.members.length)),
+    h("span", { class: "ov-chip" }, icon("link", 13), outConns["out:" + g.name] != null ? String(outConns["out:" + g.name]) : "—"),
+    h("span", { class: "ov-chip" }, t(g.mode === "balance" ? "ovBalance" : "ovOrdered")));
+  // правила: самые нагруженные и куда идут
+  const ruleOut = {};
+  for (const p of (f && f.paths) || []) { const r = ruleOut[p.rule] || (ruleOut[p.rule] = {}); r[p.out] = (r[p.out] || 0) + p.conns; }
+  const outLabel = (id) => { const o = ((f && f.outs) || []).find((x) => x.id === id) || {}; return o.kind === "direct" ? [t("monDirect"), "direct"] : o.kind === "drop" ? [t("monDrop"), "drop"] : [o.name === "vpn" ? t("monVpnOut") : (o.name || "—"), "proxy"]; };
+  const rules = ((f && f.rules) || []).filter((r) => r.id !== "rule:default").slice(0, 6);
+  const devs = ((f && f.devices) || []).slice(0, 6);
+  return [
+    h("div", { class: "ov-grid" },
+      h("div", { class: "card" }, h("div", { class: "heading-row" }, h("h2", {}, icon("activity", 18), " ", t("monTraffic")), more("#/monitor", t("navMonitor"))),
+        m ? [trafficHead(m.traffic.slice(-180)), trafficChart(m.traffic.slice(-180), { compact: true })] : h("div", { class: "loading" }, t("loading"))),
+      h("div", { class: "card" }, h("div", { class: "heading-row" }, h("h2", {}, t("ovTunnels")), more("#/profiles", t("navAll"))),
+        h("div", { class: "ov-list" }, groups.map(grpRow), list.slice().sort((a, b) => (b.primary ? 1 : 0) - (a.primary ? 1 : 0) || (b.up ? 1 : 0) - (a.up ? 1 : 0)).slice(0, 8).map(tunRow)))),
+    f && f.source !== "none" && h("div", { class: "ov-grid" },
+      h("div", { class: "card" }, h("div", { class: "heading-row" }, h("h2", {}, t("ovRules")), more("#/policy", t("ovAllRules"))),
+        rules.length ? h("div", { class: "ov-list" }, rules.map((r) => {
+          const info = monNodeInfo(r), outs = Object.entries(ruleOut[r.id] || {}).sort((a, b) => b[1] - a[1]), [ol, oc] = outs.length ? outLabel(outs[0][0]) : ["—", ""];
+          return h("a", { class: "ov-row ov-rule", href: "#/policy" }, info.tile || h("span", { class: "ov-ic" }, info.ico),
+            h("span", { class: "ov-name" }, info.label, h("span", { class: "sub mono" }, r.sub || "")),
+            h("span", { class: "rt-hits" }, String(r.conns)),
+            h("span", { class: "ov-dest d-" + oc }, ol));
+        })) : h("p", { class: "hint" }, t("ovNoRules"))),
+      h("div", { class: "card" }, h("div", { class: "heading-row" }, h("h2", {}, t("navDevices")), more("#/devices", t("ovAllDevices"))),
+        devs.length ? h("div", { class: "ov-list" }, devs.map((d) => h("a", { class: "ov-row", href: "#/monitor", onclick: () => { S.monSel = d.id; } },
+          h("span", { class: "ov-ic" }, devIcon(d.kind, 15)), h("span", { class: "ov-name" }, d.name, h("span", { class: "sub mono" }, d.sub || "")),
+          h("span", { class: "rt-hits" }, String(d.conns)), f.bytes ? h("span", { class: "ov-chip" }, fmtBytes(d.bytes)) : null))) : h("p", { class: "hint" }, t("monNoFlows")))),
+  ];
 }
 
 function emptyState() {
@@ -2149,7 +2203,7 @@ async function loadMonitor(quiet) {
 }
 async function loadFlows(quiet) {
   try { S.flows = await api("GET", "/api/monitor/flows"); } catch (e) { if (!quiet) { say("error", e.message); renderFlash(); } return; }
-  if (S.route.page === "monitor" && !S.busy && !S.monHover) renderMain();
+  if ((S.route.page === "monitor" || S.route.page === "overview") && !S.busy && !S.monHover && !document.querySelector(".row-menu[open]")) renderMain();
   if (S.route.page === "policy" && !S.dirty && !S.busy && !rtTyping() && !rtDialogOpen()) rtDraw();
 }
 const fmtRate = (bps) => {
@@ -2188,7 +2242,9 @@ function trafficChart(pts, o = {}) {
     cursor.setAttribute("x1", x(i)); cursor.setAttribute("x2", x(i)); cursor.setAttribute("visibility", "visible");
     tip.hidden = false;
     tip.replaceChildren(h("b", {}, fmtClock(p.t)), h("span", { class: "d" }, "↓ " + fmtRate(p.down)), h("span", { class: "u" }, "↑ " + fmtRate(p.up)), h("span", { class: "v" }, t("monVpn") + " ↓ " + fmtRate(p.vdown)));
-    tip.style.left = Math.min(r.width - 170, Math.max(0, fx * r.width + 12)) + "px";
+    // позиция подсказки — классом (CSP запрещает менять стиль из кода): 21 шаг по ширине
+    const step = Math.round(fx * 20);
+    tip.className = "tchart-tip " + (step > 13 ? "r-" + (20 - step) : "l-" + step);
   });
   wrap.addEventListener("mouseleave", () => { S.monHover = false; tip.hidden = true; cursor.setAttribute("visibility", "hidden"); });
   const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => h("span", {}, fmtClock(pts[Math.round(f * (n - 1))].t)));
@@ -2597,7 +2653,7 @@ setInterval(() => {
     if (S.route && S.route.page === "policy") loadPolicy(true);
     if (S.route && S.route.page === "router") loadRouter(true);
     loadMonitor(true);
-    if (S.route && S.route.page === "monitor") loadFlows(true);
+    if (S.route && (S.route.page === "monitor" || S.route.page === "overview")) loadFlows(true);
     if (S.route && S.route.page === "policy" && !S.dirty) loadFlows(true);
   }
 }, 5000);
