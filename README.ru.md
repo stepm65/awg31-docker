@@ -4,7 +4,7 @@
 
 Клиент **AmneziaWG 3.1** в контейнере с двуязычной (RU/EN) веб-консолью в том же оформлении, что и панель [amneziawg31-installer](https://github.com/stepm65/amneziawg31-installer): профили `.conf`, подъём и остановка туннелей, автозапуск после перезагрузки и **подписка прямо из вашей панели**. Работает в Docker и **на роутерах MikroTik (arm64 и arm32)**. Без CDN, без внешних зависимостей Go, без веб-терминала.
 
-Версия **0.8.2** · лицензия GPL-3.0 · проект не связан с разработчиками AmneziaVPN.
+Версия **0.8.3** · лицензия GPL-3.0 · проект не связан с разработчиками AmneziaVPN.
 
 ![Обзор](docs/screenshots/ru-overview.png)
 
@@ -111,9 +111,13 @@ docker logs awg31          # здесь токен первичной настр
 |---|---|
 | ![Резервирование](docs/screenshots/ru-failover.png) | ![Профиль](docs/screenshots/ru-profile.png) |
 
-| Маршрутизация и DNS | Подписка панели |
+| Маршрутизация и DNS | Добавление сервиса (весь список загруженной базы) |
 |---|---|
-| ![Маршрутизация](docs/screenshots/ru-policy.png) | ![Подписка](docs/screenshots/ru-subscription.png) |
+| ![Маршрутизация](docs/screenshots/ru-policy.png) | ![Добавить сервис](docs/screenshots/ru-add-service.png) |
+
+| Подписка панели | |
+|---|---|
+| ![Подписка](docs/screenshots/ru-subscription.png) | |
 
 | Новый профиль | Обслуживание |
 |---|---|

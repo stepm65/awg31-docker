@@ -28,15 +28,15 @@
 # Сообщения скрипта на английском: терминалы RouterOS (SSH, serial) часто не выводят кириллицу.
 # ВАЖНО: значения задаются ЗДЕСЬ, в файле. Команда `:local tarfile ...` в консоли в импортируемый
 # скрипт не передаётся.
-# Офлайн-установка: путь к .tar нужной архитектуры (awg31-0.8.2-linux-arm64.tar,
-# awg31-0.8.2-linux-arm-v7.tar или awg31-0.8.2-linux-amd64.tar для CHR). Пусто — образ скачивается из реестра.
+# Офлайн-установка: путь к .tar нужной архитектуры (awg31-0.8.3-linux-arm64.tar,
+# awg31-0.8.3-linux-arm-v7.tar или awg31-0.8.3-linux-amd64.tar для CHR). Пусто — образ скачивается из реестра.
 :local tarfile ""
 # Куда класть данные (профили, пароль, сертификат). Пусто — рядом с образом (<disk>/awg31/data).
 :local datadir ""
 # Образ в реестре (многоархитектурный: RouterOS берёт arm64, arm или amd64 сам).
 # Если ваша версия не принимает реестр в имени, задайте
 # /container/config/set registry-url=https://ghcr.io и укажите имя без ghcr.io/.
-:local image "ghcr.io/stepm65/awg31-docker:0.8.2"
+:local image "ghcr.io/stepm65/awg31-docker:0.8.3"
 # Адреса veth: контейнер .2, роутер .1.
 :local cip "192.168.253.2"
 :local rip "192.168.253.1"
@@ -136,8 +136,10 @@
 # После переустановки (uninstall.rsc убирает правила awg31_*) без них у контейнера нет интернета.
 # router-setup.rsc идемпотентен и берёт настройки из тех же :global (AWG31ALL, AWG31LIST и др.).
 :global AWG31NOSETUP
+:local nosetup false
+:if ([:typeof $AWG31NOSETUP] = "bool") do={ :set nosetup $AWG31NOSETUP }
 :local setupDone false
-:if (!([:typeof $AWG31NOSETUP] = "bool" && $AWG31NOSETUP)) do={
+:if (!$nosetup) do={
   :local rs ""
   :foreach f in={"router-setup.rsc"; ($base . "/router-setup.rsc"); ($disk . "/router-setup.rsc")} do={
     :if (([:len $rs] = 0) && ([:len [/file/find name=$f]] > 0)) do={ :set rs $f }
