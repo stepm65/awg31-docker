@@ -76,7 +76,19 @@ const I18N = {
     ago_s: "{n} с назад", ago_m: "{n} мин назад", ago_h: "{n} ч назад", ago_d: "{n} дн назад",
     loading: "Загрузка…", yes: "да", no: "нет", back: "К списку", confirmDelete: "Подтвердить удаление",
     version: "Версия", language: "Язык", close: "Закрыть",
-    navInfra: "ИНФРАСТРУКТУРА", navProfiles: "ПРОФИЛИ", navSystem: "СИСТЕМА", navDevices: "Устройства", navMonitor: "Мониторинг", ovTunnels: "Туннели и группы", ovRules: "Правила маршрутизации", ovAllRules: "Все правила", ovAllDevices: "Все устройства",
+    navInfra: "ИНФРАСТРУКТУРА", navProfiles: "ПРОФИЛИ", navSystem: "СИСТЕМА", navDevices: "Устройства", navMonitor: "Мониторинг", navTools: "Инструменты",
+    toolTitle: "Инструменты", toolSub: "Базы geodata, проверка маршрута, перенос правил и резервная копия.",
+    toolGeoTitle: "Геоданные", toolGeoSources: "Источники", toolLoadedCats: "в правилах: {n}",
+    toolExtraTitle: "Дополнительные наборы", toolExtraSub: "Любой .dat (например geo-slim или russia-blocked) под своим тегом. Не больше 8 наборов.",
+    toolExtraEmpty: "Наборов нет.", toolExtraAdd: "Добавить набор", toolExtraSave: "Сохранить и скачать", toolExtraSaved: "Наборы сохранены и скачаны.",
+    toolExtraHint: "В правилах категория пишется с тегом: {ex}:{tag}:категория.", toolKind: "Тип", toolTag: "тег", toolCats: "{n} кат.", toolNotLoaded: "не скачан",
+    toolTestTitle: "Тест маршрута", toolDevice: "Устройство", toolAnyDevice: "Любое устройство", toolPort: "Порт",
+    toolByRule: "по правилу «{name}» ({by})",
+    toolRulesTitle: "Правила маршрутизации", toolRulesSub: "Текст правил файлом: для переноса на другой роутер. Импорт открывает правила в редакторе, сохраняете вы.",
+    toolExport: "Экспорт правил", toolImport: "Импорт правил", toolImported: "Правила из файла загружены в редактор. Проверьте и сохраните.", toolTooBig: "Файл больше 64 КБ.",
+    toolBackupTitle: "Резервная копия", toolBackupWarn: "В копии закрытые ключи профилей, ссылки подписок и пароль роутера. Храните её как пароль.",
+    toolBackupGet: "Скачать копию", toolRestoreTitle: "Восстановление", toolRestoreSub: "Заменяет профили и все настройки копией. Логин и пароль администратора остаются текущими. Туннели перезапускаются.",
+    toolRestoreFile: "Файл копии (.json)", toolRestore: "Восстановить", toolRestored: "Копия восстановлена.", toolPickFile: "Выберите файл копии.", toolNotBackup: "Это не файл резервной копии.", ovTunnels: "Туннели и группы", ovRules: "Правила маршрутизации", ovAllRules: "Все правила", ovAllDevices: "Все устройства",
     ovNoRules: "По правилам сейчас нет соединений.", ovConnsHint: "Соединений клиентов через туннель", ovBalance: "балансировка", ovOrdered: "по порядку", ssWorking: "работает", ssIdle: "нет туннелей", ssCpu: "Процессор", ssMem: "Память контейнера", ssConns: "Соединений клиентов", ssUptime: "Время работы",
     monTitle: "Мониторинг", monSub: "Трафик, устройства, правила и туннели по соединениям клиентов.",
     monTraffic: "Трафик", monWin15: "15 минут", monWin60: "1 час", monPeak: "пик", monDown: "загрузка", monUp: "отдача",
@@ -285,7 +297,19 @@ const I18N = {
     ago_s: "{n}s ago", ago_m: "{n}m ago", ago_h: "{n}h ago", ago_d: "{n}d ago",
     loading: "Loading…", yes: "yes", no: "no", back: "Back to list", confirmDelete: "Confirm deletion",
     version: "Version", language: "Language", close: "Close",
-    navInfra: "INFRASTRUCTURE", navProfiles: "PROFILES", navSystem: "SYSTEM", navDevices: "Devices", navMonitor: "Monitoring", ovTunnels: "Tunnels and groups", ovRules: "Routing rules", ovAllRules: "All rules", ovAllDevices: "All devices",
+    navInfra: "INFRASTRUCTURE", navProfiles: "PROFILES", navSystem: "SYSTEM", navDevices: "Devices", navMonitor: "Monitoring", navTools: "Tools",
+    toolTitle: "Tools", toolSub: "Geodata, route test, moving rules and backup.",
+    toolGeoTitle: "Geodata", toolGeoSources: "Sources", toolLoadedCats: "in rules: {n}",
+    toolExtraTitle: "Extra sets", toolExtraSub: "Any .dat (for example geo-slim or russia-blocked) under its own tag. Up to 8 sets.",
+    toolExtraEmpty: "No sets.", toolExtraAdd: "Add set", toolExtraSave: "Save and download", toolExtraSaved: "Sets saved and downloaded.",
+    toolExtraHint: "In rules write the category with the tag: {ex}:{tag}:category.", toolKind: "Type", toolTag: "tag", toolCats: "{n} cat.", toolNotLoaded: "not downloaded",
+    toolTestTitle: "Route test", toolDevice: "Device", toolAnyDevice: "Any device", toolPort: "Port",
+    toolByRule: "by rule \"{name}\" ({by})",
+    toolRulesTitle: "Routing rules", toolRulesSub: "The rules text as a file: to move it to another router. Import opens the rules in the editor; you save them.",
+    toolExport: "Export rules", toolImport: "Import rules", toolImported: "Rules from the file are loaded into the editor. Check and save them.", toolTooBig: "The file is larger than 64 KB.",
+    toolBackupTitle: "Backup", toolBackupWarn: "The backup holds profile private keys, subscription links and the router password. Keep it like a password.",
+    toolBackupGet: "Download backup", toolRestoreTitle: "Restore", toolRestoreSub: "Replaces profiles and all settings with the backup. The administrator login and password stay as they are. Tunnels restart.",
+    toolRestoreFile: "Backup file (.json)", toolRestore: "Restore", toolRestored: "Backup restored.", toolPickFile: "Choose a backup file.", toolNotBackup: "This is not a backup file.", ovTunnels: "Tunnels and groups", ovRules: "Routing rules", ovAllRules: "All rules", ovAllDevices: "All devices",
     ovNoRules: "No connections by rules right now.", ovConnsHint: "Client connections through the tunnel", ovBalance: "balance", ovOrdered: "ordered", ssWorking: "running", ssIdle: "no tunnels", ssCpu: "CPU", ssMem: "Container memory", ssConns: "Client connections", ssUptime: "Uptime",
     monTitle: "Monitoring", monSub: "Traffic, devices, rules and tunnels by client connections.",
     monTraffic: "Traffic", monWin15: "15 minutes", monWin60: "1 hour", monPeak: "peak", monDown: "download", monUp: "upload",
@@ -616,6 +640,7 @@ function parseRoute() {
   if (parts[0] === "router") return { page: "router" };
   if (parts[0] === "devices") return { page: "devices" };
   if (parts[0] === "monitor") return { page: "monitor" };
+  if (parts[0] === "tools") return { page: "tools" };
   if (parts[0] === "p" && parts[1]) return { page: "profile", name: parts[1], tab: ["config", "sub"].includes(parts[2]) ? parts[2] : "overview" };
   return { page: "overview" };
 }
@@ -631,6 +656,7 @@ window.addEventListener("hashchange", () => {
   if (S.route.page === "router") { S.rosEdit = null; loadRouter(true); }
   if (S.route.page === "devices") { S.devEdit = null; S.leases = null; loadDevices(true); }
   if (S.route.page === "monitor") { loadMonitor(true); loadFlows(true); }
+  if (S.route.page === "tools") { S.toolTest = null; S.extraEdit = null; loadPolicy(true); loadDevices(true); }
   if (S.auth && S.auth.authenticated) { renderSide(); renderMain(); }
 });
 document.addEventListener("input", (e) => { if (e.target.closest && e.target.closest("#main form") && !e.target.closest("[data-nodirty]")) S.dirty = true; });
@@ -742,6 +768,7 @@ function renderSide() {
       h("span", { class: "names" }, h("span", { class: "n" }, p.name), h("span", { class: "a" }, addrOf(p))))),
     h("div", { class: "side-title" }, h("span", {}, t("navSystem"))),
     link("router", "link", t("navRouter"), "/router"),
+    link("tools", "wrench", t("navTools"), "/tools"),
     link("maintenance", "settings", t("navMaint"), "/maintenance"),
     h("div", { class: "side-status", id: "side-status" }),
     h("div", { class: "side-foot" }, icon("tag", 16), h("span", { class: "ver" }, "v" + ((S.data && S.data.version) || "…"))),
@@ -776,7 +803,7 @@ function renderMain() {
   const r = S.route;
   const page = r.page === "profiles" ? pageProfiles() : r.page === "profile" ? pageProfile(r)
     : r.page === "new" ? pageNew() : r.page === "maintenance" ? pageMaintenance()
-    : r.page === "failover" ? pageFailover() : r.page === "groups" ? pageGroups() : r.page === "policy" ? pagePolicy() : r.page === "router" ? pageRouter() : r.page === "devices" ? pageDevices() : r.page === "monitor" ? pageMonitor() : pageOverview();
+    : r.page === "failover" ? pageFailover() : r.page === "groups" ? pageGroups() : r.page === "policy" ? pagePolicy() : r.page === "router" ? pageRouter() : r.page === "devices" ? pageDevices() : r.page === "monitor" ? pageMonitor() : r.page === "tools" ? pageTools() : pageOverview();
   mainEl.replaceChildren(h("div", { id: "flash-slot" }, flashBox()), page);
 }
 
@@ -2069,12 +2096,126 @@ async function loadPolicy(quiet) {
     // Пока открыт диалог сервиса или есть несохранённые правки, модель правил не пересоздаётся:
     // диалог держит ссылку на неё, и добавленное в него пропало бы.
     if (!S.polEdit || !(S.dirty || rtDialogOpen())) { S.polEdit = { ...S.pol.settings }; rtReset(); }
+    if (S.importRules != null && S.route.page === "policy") {
+      // правила из файла («Инструменты» → «Импорт»): в редактор, сохраняет человек
+      S.polEdit.rules = S.importRules; S.importRules = null; rtReset(); S.dirty = true;
+      say("ok", t("toolImported")); renderMain(); rtBar();
+    }
   } catch (e) {
     if (!quiet) { say("error", e.message); renderFlash(); }
   }
   if (first || !S.grp) try { S.grp = await api("GET", "/api/groups"); } catch (_) { /* группы нужны только для списка «Куда» */ }
   if (first || !S.dev) try { S.dev = await api("GET", "/api/devices"); } catch (_) { /* устройства нужны только для правил по устройствам */ }
   if (S.route.page === "policy" && !S.dirty && !S.busy && !rtTyping() && !rtDialogOpen()) renderMain();
+  if (S.route.page === "tools" && !S.dirty && !S.busy && !toolsTyping()) renderMain();
+}
+const toolsTyping = () => { const a = document.activeElement; return !!(a && mainEl && mainEl.contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)); };
+
+/* ---------- инструменты ---------- */
+function pageTools() {
+  if (!S.pol) { loadPolicy(); return h("div", {}, heading(t("navSystem"), t("toolTitle")), h("div", { class: "loading" }, t("loading"))); }
+  const v = S.pol, g = v.geo || {}, devs = (S.dev && S.dev.devices) || [];
+  if (!S.extraEdit) S.extraEdit = (v.settings.geo_extra || []).map((x) => ({ ...x }));
+  const ex = S.extraEdit, exStat = {};
+  for (const x of v.geo_extra || []) exStat[x.kind + ":" + x.tag] = x;
+  const dirty = () => { S.dirty = true; };
+  const host = (u) => { try { return new URL(u).host; } catch (_) { return u || "—"; } };
+  const geoLine = (label, f, n) => h("div", { class: "tool-geo" },
+    h("div", {}, h("b", { class: "mono" }, label), " ", f && f.present ? h("span", { class: "pill pill-on" }, t("polGeoHave")) : h("span", { class: "pill pill-idle" }, t("polGeoNone")),
+      f && f.present ? h("span", { class: "muted" }, " " + fmtBytes(f.size) + " · " + fmtDate(f.updated)) : null),
+    h("div", { class: "mono muted tool-src" }, f && f.source ? host(f.source) : "—", n ? " · " + t("toolLoadedCats", { n }) : ""));
+  const updateGeo = () => act(async () => { polGen++; S.pol = await api("POST", "/api/geo/update"); S.polEdit = { ...S.pol.settings }; rtReset(); S.extraEdit = null; }, t("polGeoUpdated"));
+  const saveExtra = () => act(async () => {
+    const st = { ...S.pol.settings, geo_extra: ex.map((x) => ({ tag: String(x.tag || "").trim().toLowerCase(), url: String(x.url || "").trim(), kind: x.kind })) };
+    try { S.pol = await api("PUT", "/api/policy", { ...st, geo_update_hours: parseInt(st.geo_update_hours, 10) || 0 }); } catch (e) { throw new Error(e.data && e.data.errors ? e.data.errors.join(" · ") : e.message); }
+    polGen++; S.pol = await api("POST", "/api/geo/update"); S.polEdit = { ...S.pol.settings }; rtReset(); S.extraEdit = null;
+  }, t("toolExtraSaved"));
+  const exRow = (x, i) => {
+    const st = exStat[x.kind + ":" + x.tag];
+    return h("div", { class: "tool-extra" },
+      h("input", { type: "text", class: "mono", value: x.url || "", placeholder: "https://…/geosite.dat", "aria-label": "URL", spellcheck: "false", oninput: (e) => { x.url = e.target.value; dirty(); } }),
+      h("select", { "aria-label": t("toolKind"), onchange: (e) => { x.kind = e.target.value; dirty(); } }, ["geosite", "geoip"].map((k) => h("option", { value: k, selected: x.kind === k }, k === "geosite" ? "GeoSite" : "GeoIP"))),
+      h("input", { type: "text", class: "mono", value: x.tag || "", placeholder: t("toolTag"), "aria-label": t("toolTag"), maxlength: "24", spellcheck: "false", oninput: (e) => { x.tag = e.target.value; dirty(); renderSyntax(); } }),
+      h("span", { class: "tool-extra-st" }, st && st.file && st.file.present ? [h("span", { class: "pill pill-on" }, t("polGeoHave")), h("span", { class: "muted" }, " " + fmtBytes(st.file.size) + " · " + t("toolCats", { n: st.categories }))] : h("span", { class: "pill pill-idle" }, t("toolNotLoaded"))),
+      h("button", { type: "button", class: "icon-btn", "aria-label": t("delete"), title: t("delete"), onclick: () => { ex.splice(i, 1); dirty(); renderMain(); } }, icon("trash", 16)));
+  };
+  const syntax = h("p", { class: "hint" });
+  const renderSyntax = () => { const x = ex[0]; syntax.textContent = t("toolExtraHint", { ex: (x && x.kind) || "geosite", tag: (x && x.tag) || "slim" }); };
+  renderSyntax();
+  // тест маршрута
+  const tt = S.toolTest;
+  const tq = h("input", { id: "tt-q", type: "text", class: "mono", placeholder: "www.youtube.com / 77.88.8.8", spellcheck: "false", "data-nodirty": "" });
+  const tdev = h("select", { id: "tt-dev", "data-nodirty": "" }, h("option", { value: "" }, t("toolAnyDevice")), devs.map((d) => h("option", { value: "@" + d.id }, d.name + " · " + d.addr)));
+  const tport = h("input", { id: "tt-port", type: "number", min: "0", max: "65535", placeholder: "443", "data-nodirty": "" });
+  const tproto = h("select", { id: "tt-proto", "data-nodirty": "" }, h("option", { value: "tcp" }, "TCP"), h("option", { value: "udp" }, "UDP"));
+  const runTest = async () => {
+    const body = { query: tq.value };
+    if (tdev.value || tport.value) { body.src = tdev.value; body.port = parseInt(tport.value, 10) || 0; body.proto = tproto.value; }
+    try { S.toolTest = await api("POST", "/api/policy/test", body); } catch (e) { S.toolTest = { error: e.message }; }
+    S.toolTestIn = { q: tq.value, dev: tdev.value, port: tport.value, proto: tproto.value };
+    renderMain();
+  };
+  if (S.toolTestIn) { tq.value = S.toolTestIn.q; tdev.value = S.toolTestIn.dev; tport.value = S.toolTestIn.port; tproto.value = S.toolTestIn.proto; }
+  const actLabel = (a) => (a ? t("polAct_" + String(a).toLowerCase()) : "—");
+  // импорт правил и восстановление копии
+  const fileImport = h("input", { type: "file", accept: ".txt,.list,.conf,text/plain", class: "sr-only", id: "tool-import", "data-nodirty": "",
+    onchange: async (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      if (f.size > 64 * 1024) { say("error", t("toolTooBig")); renderFlash(); return; }
+      S.importRules = await f.text(); location.hash = "#/policy";
+    } });
+  const restoreFile = h("input", { type: "file", accept: ".json,application/json", id: "tool-restore", "data-nodirty": "", onchange: (e) => { S.restoreFile = e.target.files[0] || null; renderMain(); } });
+  const restorePw = h("input", { type: "password", id: "tool-restore-pw", autocomplete: "current-password", "data-nodirty": "" });
+  const restore = () => act(async () => {
+    if (!S.restoreFile) throw new Error(t("toolPickFile"));
+    let backup;
+    try { backup = JSON.parse(await S.restoreFile.text()); } catch (_) { throw new Error(t("toolNotBackup")); }
+    const r = await api("POST", "/api/backup/restore", { password: restorePw.value, backup });
+    S.restoreFile = null; S.pol = null; S.dev = null; S.grp = null; S.extraEdit = null;
+    await refresh(true);
+    return r;
+  }, t("toolRestored"));
+  return h("div", {},
+    heading(t("navSystem"), t("toolTitle"), t("toolSub")),
+    h("div", { class: "tools-grid" },
+      h("div", {},
+        h("div", { class: "card" }, h("div", { class: "heading-row" }, h("h2", {}, t("toolGeoTitle")), h("a", { class: "card-link", href: "#/policy" }, t("toolGeoSources") + " →")),
+          geoLine("geosite.dat", g.geosite, Object.keys(g.site_loaded || {}).length), geoLine("geoip.dat", g.geoip, Object.keys(g.ip_loaded || {}).length),
+          g.last_error && h("p", { class: "info-line" }, icon("alert", 16), h("span", {}, g.last_error)),
+          h("div", { class: "actions" }, h("button", { class: "btn btn-primary", type: "button", disabled: S.busy, onclick: updateGeo }, icon("restart", 16), t("polGeoUpdate")))),
+        h("div", { class: "card" }, h("h2", {}, t("toolExtraTitle")),
+          h("p", { class: "hint" }, t("toolExtraSub")),
+          ex.length ? h("div", { class: "tool-extra-list" }, ex.map(exRow)) : h("p", { class: "hint" }, t("toolExtraEmpty")),
+          syntax,
+          h("div", { class: "actions" },
+            h("button", { class: "btn btn-secondary", type: "button", disabled: ex.length >= 8, onclick: () => { ex.push({ url: "", kind: "geosite", tag: "" }); dirty(); renderMain(); } }, icon("plus", 16), t("toolExtraAdd")),
+            h("button", { class: "btn btn-primary", type: "button", disabled: S.busy, onclick: saveExtra }, icon("download", 16), t("toolExtraSave"))))),
+      h("div", {},
+        h("div", { class: "card" }, h("h2", {}, t("toolTestTitle")),
+          h("form", { "data-nodirty": "", onsubmit: (e) => { e.preventDefault(); runTest(); } },
+            h("div", { class: "field" }, h("label", { for: "tt-q" }, t("polTestLabel")), tq),
+            h("div", { class: "tool-test-row" },
+              h("div", { class: "field" }, h("label", { for: "tt-dev" }, t("toolDevice")), tdev),
+              h("div", { class: "field" }, h("label", { for: "tt-port" }, t("toolPort")), tport),
+              h("div", { class: "field" }, h("label", { for: "tt-proto" }, t("rtNet")), tproto)),
+            h("div", { class: "actions" }, h("button", { class: "btn btn-secondary", type: "submit" }, icon("arrow", 16), t("polTestBtn")))),
+          tt && (tt.error ? h("p", { class: "info-line" }, icon("alert", 16), h("span", {}, tt.error))
+            : h("div", { class: "tool-result d-" + String(tt.action || "").toLowerCase() },
+              h("b", {}, tt.query), " → ", h("b", {}, actLabel(tt.action) + (tt.target ? " (" + tt.target + ")" : "")),
+              h("div", { class: "muted" }, tt.rule ? t("toolByRule", { name: tt.rule, by: tt.matched_by }) : t("polBy") + " " + (tt.matched_by === "default" ? t("monDefault") : tt.matched_by))))),
+        h("div", { class: "card" }, h("h2", {}, t("toolRulesTitle")),
+          h("p", { class: "hint" }, t("toolRulesSub")),
+          h("div", { class: "actions" },
+            h("a", { class: "btn btn-secondary", href: "/api/policy/export", download: "" }, icon("download", 16), t("toolExport")),
+            h("label", { class: "btn btn-secondary", for: "tool-import" }, icon("upload", 16), t("toolImport")), fileImport)),
+        h("div", { class: "card" }, h("h2", {}, t("toolBackupTitle")),
+          h("p", { class: "info-line" }, icon("alert", 16), h("span", {}, t("toolBackupWarn"))),
+          h("div", { class: "actions" }, h("a", { class: "btn btn-primary", href: "/api/backup", download: "" }, icon("download", 16), t("toolBackupGet"))),
+          h("h3", { class: "tool-sub" }, t("toolRestoreTitle")),
+          h("p", { class: "hint" }, t("toolRestoreSub")),
+          h("div", { class: "field" }, h("label", { for: "tool-restore" }, t("toolRestoreFile")), restoreFile),
+          h("div", { class: "field" }, h("label", { for: "tool-restore-pw" }, t("pwCurrent")), restorePw),
+          h("div", { class: "actions" }, h("button", { class: "btn btn-danger", type: "button", disabled: S.busy || !S.restoreFile, onclick: restore }, icon("restart", 16), t("toolRestore")))))));
 }
 
 function pagePolicy() {
@@ -2451,7 +2592,7 @@ async function loadDevices(quiet) {
   } catch (e) {
     if (!quiet) { say("error", e.message); renderFlash(); }
   }
-  if (S.route.page === "devices" && !S.dirty && !S.busy) renderMain();
+  if ((S.route.page === "devices" || S.route.page === "tools") && !S.dirty && !S.busy) renderMain();
 }
 // Сколько правил ссылается на устройство (по тексту правил, если он уже загружен).
 function devRefCount(id) {
