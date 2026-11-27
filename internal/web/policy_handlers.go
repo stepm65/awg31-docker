@@ -1,8 +1,10 @@
 package web
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -140,6 +142,38 @@ func (s *Server) fetchMissingGeo(r *http.Request, p store.Policy) error {
 	}
 	s.cfg.Logf("geo databases downloaded")
 	return nil
+}
+
+// handleGeoIcon отдаёт значок сайта из списка IPList. Браузер панели наружу не ходит (CSP), поэтому
+// значок берёт и кеширует контейнер. Подходят только сайты из загруженной базы и только когда
+// источник баз — сервер вида IPList; для остальных источников значков нет (404).
+func (s *Server) handleGeoIcon(w http.ResponseWriter, r *http.Request, _ string) {
+	site := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("site")))
+	if s.cfg.Geo == nil || !geo.IconSite(site) {
+		writeErr(w, http.StatusNotFound, "значка нет")
+		return
+	}
+	base := geo.IconBase(s.cfg.Store.Snapshot().PolicySettings().GeoSiteURL, s.cfg.AllowHTTPSubs)
+	cats := s.cfg.Geo.Categories("geosite")
+	if i := sort.SearchStrings(cats, site); base == "" || i >= len(cats) || cats[i] != site {
+		writeErr(w, http.StatusNotFound, "значка нет")
+		return
+	}
+	ctx, cancel := timeout(r, 25*time.Second)
+	defer cancel()
+	data, ct, err := s.cfg.Geo.Icon(ctx, base, site, s.cfg.AllowHTTPSubs)
+	if errors.Is(err, geo.ErrNoIcon) {
+		writeErr(w, http.StatusNotFound, "значка нет")
+		return
+	}
+	if err != nil {
+		writeErr(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	w.Header().Set("Content-Type", ct)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Cache-Control", "private, max-age=86400")
+	_, _ = w.Write(data)
 }
 
 func (s *Server) handleTestPolicy(w http.ResponseWriter, r *http.Request, _ string) {

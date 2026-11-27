@@ -137,6 +137,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/policy/test", s.requireAuth(s.handleTestPolicy))
 	mux.HandleFunc("POST /api/geo/update", s.requireAuth(s.handleGeoUpdate))
 	mux.HandleFunc("GET /api/geo/categories", s.requireAuth(s.handleGeoCategories))
+	mux.HandleFunc("GET /api/geo/icon", s.requireAuth(s.handleGeoIcon))
 	mux.HandleFunc("GET /api/router", s.requireAuth(s.handleGetRouter))
 	mux.HandleFunc("PUT /api/router", s.requireAuth(s.handlePutRouter))
 	mux.HandleFunc("POST /api/router/test", s.requireAuth(s.handleTestRouter))

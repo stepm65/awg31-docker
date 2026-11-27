@@ -158,6 +158,79 @@ func TestPolicySaveGeoDownloadFails(t *testing.T) {
 	}
 }
 
+// Значок сайта для списка IPList: отдаётся только сайт из загруженной базы, картинка
+// проверяется по содержимому и кешируется.
+func TestGeoIcon(t *testing.T) {
+	png := append([]byte{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 'I', 'H', 'D', 'R', 0, 0, 0, 16, 0, 0, 0, 16}, make([]byte, 20)...)
+	hits := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/favicon" {
+			http.NotFound(w, r)
+			return
+		}
+		hits++
+		if r.URL.Query().Get("site") == "page.org" {
+			_, _ = w.Write([]byte("<!DOCTYPE html><html><body>not an icon at all</body></html>"))
+			return
+		}
+		_, _ = w.Write(png)
+	}))
+	defer srv.Close()
+	e := policyEnv(t, true)
+	if code, _, _ := e.do("GET", "/api/geo/icon?site=telegram.org", nil, nil); code != http.StatusUnauthorized {
+		t.Fatalf("без входа: %d", code)
+	}
+	e.setup()
+	dir := e.srv.cfg.Geo.Dir
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	pb := func(v []byte) []byte { return append([]byte{0x0a, byte(len(v))}, v...) }
+	var data []byte
+	for _, c := range []string{"MESSENGERS", "PAGE.ORG", "TELEGRAM.ORG"} {
+		entry := pb([]byte(c))
+		data = append(data, append([]byte{0x0a, byte(len(entry))}, entry...)...)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "geosite.dat"), data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	set := func(siteURL string) {
+		p := store.DefaultPolicy()
+		p.GeoSiteURL, p.GeoIPURL = siteURL, ""
+		if code, _, raw := e.do("PUT", "/api/policy", p, nil); code != 200 {
+			t.Fatalf("настройки: %d %s", code, raw)
+		}
+	}
+	get := func(site string) (int, string) {
+		resp, err := e.client.Get(e.ts.URL + "/api/geo/icon?site=" + site)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		return resp.StatusCode, resp.Header.Get("Content-Type")
+	}
+	// источник без сервера значков (как Loyalsoldier): 404
+	set("https://example.org/geosite.dat")
+	if code, _ := get("telegram.org"); code != http.StatusNotFound {
+		t.Fatalf("у обычного источника значков нет: %d", code)
+	}
+	set(srv.URL + "/?format=geosite&data=domains")
+	if code, ct := get("telegram.org"); code != 200 || ct != "image/png" {
+		t.Fatalf("значок: %d %q", code, ct)
+	}
+	if code, _ := get("telegram.org"); code != 200 || hits != 1 {
+		t.Fatalf("повторно из кеша: %d, запросов %d", code, hits)
+	}
+	if code, _ := get("page.org"); code != http.StatusNotFound {
+		t.Fatalf("страница вместо значка: %d", code)
+	}
+	for _, site := range []string{"messengers", "nothere.org", "..%2Fx.org"} {
+		if code, _ := get(site); code != http.StatusNotFound {
+			t.Fatalf("%s: %d", site, code)
+		}
+	}
+}
+
 func TestGeoCategoriesSearch(t *testing.T) {
 	e := policyEnv(t, true)
 	if code, _, _ := e.do("GET", "/api/geo/categories?kind=geosite&q=you", nil, nil); code != http.StatusUnauthorized {
