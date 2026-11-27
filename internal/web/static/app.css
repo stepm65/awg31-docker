@@ -630,3 +630,6 @@ select.cell-input{width:auto;min-width:200px}
 .tools-grid .card>.hint{margin:4px 0 12px}
 .tools-grid .field{margin-top:10px}
 .side-status,.side-foot{flex:none}
+/* отступы между крупными блоками страницы, когда между ними форма (группы, резервирование) */
+.grid-stats+form,.grid-stats+div:not(.card){margin-top:18px}
+form+.card,form+.flash{margin-top:18px}
