@@ -58,7 +58,7 @@ On RouterOS 7.22+ one command is enough:
 /app/add yaml-url="https://raw.githubusercontent.com/stepm65/awg31-docker/main/routeros/app.yaml"
 ```
 
-For RouterOS 7.20–7.21 and offline installs: `routeros/install-container.rsc` (with the `.tar` for your architecture from the release), then `routeros/router-setup.rsc`. Supported models, address-list routing and what was verified: [docs/MIKROTIK.md](docs/MIKROTIK.md) (Russian).
+For RouterOS 7.20–7.21 and offline installs: `routeros/install-container.rsc` (with the `.tar` for your architecture from the release), with `routeros/router-setup.rsc` uploaded next to it (the install script applies it itself). Supported models, address-list routing and what was verified: [docs/MIKROTIK.md](docs/MIKROTIK.md) (Russian).
 
 ## Subscription from the panel
 

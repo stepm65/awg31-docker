@@ -58,7 +58,7 @@ docker logs awg31          # здесь токен первичной настр
 /app/add yaml-url="https://raw.githubusercontent.com/stepm65/awg31-docker/main/routeros/app.yaml"
 ```
 
-Для RouterOS 7.20–7.21 и для установки без интернета: `routeros/install-container.rsc` (с архивом `.tar` нужной архитектуры из релиза), затем `routeros/router-setup.rsc`. Поддерживаемые модели, маршрутизация по address-list и что проверено: [docs/MIKROTIK.md](docs/MIKROTIK.md).
+Для RouterOS 7.20–7.21 и для установки без интернета: `routeros/install-container.rsc` (с архивом `.tar` нужной архитектуры из релиза), с `routeros/router-setup.rsc` рядом (скрипт установки применит его сам). Поддерживаемые модели, маршрутизация по address-list и что проверено: [docs/MIKROTIK.md](docs/MIKROTIK.md).
 
 ## Подписка из панели
 

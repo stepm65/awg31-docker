@@ -30,12 +30,12 @@ awg31 работает контейнером на роутерах MikroTik с 
 ## Вариант 2: обычный контейнер (RouterOS 7.20+)
 
 1. Скачайте `install-container.rsc` и `router-setup.rsc` из релиза (или из каталога `routeros/`).
-2. В начале `install-container.rsc` укажите диск (`usb1`). Для установки без интернета положите на роутер архив нужной архитектуры из релиза (`awg31-<версия>-linux-arm64.tar` или `awg31-<версия>-linux-arm-v7.tar`) и укажите его в `tarfile`.
-3. Выполните:
+2. В начале `install-container.rsc` укажите диск (`usb1`). Для установки без интернета положите на роутер архив нужной архитектуры из релиза (`awg31-<версия>-linux-arm64.tar`, `awg31-<версия>-linux-arm-v7.tar` или `awg31-<версия>-linux-amd64.tar` для CHR и x86) и укажите его в `tarfile`.
+3. Загрузите оба файла на роутер и выполните:
    ```
    /import install-container.rsc
-   /import router-setup.rsc
    ```
+   Начиная с 0.8.3 скрипт сам применяет `router-setup.rsc`, если он лежит рядом (в корне файлов, в `<диск>/awg31/` или на `<диск>/`). Поэтому после переустановки правила `awg31_*` возвращаются, и интернет у контейнера есть сразу. Если файла нет, скрипт напомнит выполнить `/import router-setup.rsc` вручную. Отключить автоприменение: `:global AWG31NOSETUP true` перед запуском.
 
 Контейнер получает адрес `192.168.253.2/30`, роутер — `192.168.253.1`. Веб-консоль: `https://192.168.253.2:8443` (только из LAN). Токен первичной настройки:
 
@@ -47,10 +47,11 @@ awg31 работает контейнером на роутерах MikroTik с 
 
 ### Нет интернета у контейнера (подписка не обновляется)
 
-Контейнер ходит наружу через роутер, и этому могут мешать три вещи (`router-setup.rsc` настраивает первые две):
+Контейнер ходит наружу через роутер, и этому могут мешать такие вещи (`router-setup.rsc` настраивает первые две):
 
 - нет `srcnat` (masquerade) для адреса контейнера: `/ip/firewall/nat/add chain=srcnat action=masquerade src-address=192.168.253.2 out-interface-list=WAN comment="awg31_nat"`;
 - стандартный firewall режет ICMP к роутеру и forward с veth (он не из `LAN`): правила `awg31_icmp` (input) и `awg31_out` (forward из veth в `WAN`);
+- после `uninstall.rsc` правила `awg31_*` удалены, а `router-setup.rsc` при установке не применился (файла не было рядом): `/import router-setup.rsc`;
 - veth контейнера добавлен в список `WAN`: тогда forward с него режет правило «drop all from WAN not DSTNATed». Из списка его нужно убрать: `/interface/list/member/remove [find list=WAN interface=veth-awg31]`.
 
 Проверка: `/container/shell awg31`, затем `ping -c2 1.1.1.1` и `nslookup <хост панели> 1.1.1.1`.

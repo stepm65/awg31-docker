@@ -1,12 +1,14 @@
 # ============================================================================
 #  install-container.rsc — установка awg31 обычным контейнером RouterOS
-#  (без /app). Подходит для arm64 и arm (ARMv7), RouterOS 7.20+ (envs/mounts
+#  (без /app). Подходит для arm64, arm (ARMv7) и x86_64 (CHR), RouterOS 7.20+ (envs/mounts
 #  с параметром list=). Повторный запуск ничего не дублирует.
 #
 #  1. Отредактируйте значения в блоке «Параметры» ниже.
 #  2. Загрузите файл на роутер (Winbox -> Files) и выполните:
 #       /import install-container.rsc
-#  3. Затем /import router-setup.rsc (маршрутизация по address-list).
+#  3. Если рядом лежит router-setup.rsc, скрипт применит его сам (правила маршрутизации,
+#     srcnat и разрешение контейнеру выхода в интернет). Без него у контейнера нет интернета.
+#     Отключить: :global AWG31NOSETUP true перед запуском; тогда /import router-setup.rsc вручную.
 #
 #  ВНИМАНИЕ: скрипт не проверялся на живом роутере; синтаксис сверен с
 #  документацией MikroTik. Если команда не подходит к вашей версии RouterOS,
@@ -26,12 +28,12 @@
 # Сообщения скрипта на английском: терминалы RouterOS (SSH, serial) часто не выводят кириллицу.
 # ВАЖНО: значения задаются ЗДЕСЬ, в файле. Команда `:local tarfile ...` в консоли в импортируемый
 # скрипт не передаётся.
-# Офлайн-установка: путь к .tar нужной архитектуры (awg31-0.8.2-linux-arm64.tar или
-# awg31-0.8.2-linux-arm-v7.tar). Пусто — образ скачивается из реестра.
+# Офлайн-установка: путь к .tar нужной архитектуры (awg31-0.8.2-linux-arm64.tar,
+# awg31-0.8.2-linux-arm-v7.tar или awg31-0.8.2-linux-amd64.tar для CHR). Пусто — образ скачивается из реестра.
 :local tarfile ""
 # Куда класть данные (профили, пароль, сертификат). Пусто — рядом с образом (<disk>/awg31/data).
 :local datadir ""
-# Образ в реестре (многоархитектурный: RouterOS берёт arm64 или arm сам).
+# Образ в реестре (многоархитектурный: RouterOS берёт arm64, arm или amd64 сам).
 # Если ваша версия не принимает реестр в имени, задайте
 # /container/config/set registry-url=https://ghcr.io и укажите имя без ghcr.io/.
 :local image "ghcr.io/stepm65/awg31-docker:0.8.2"
@@ -130,8 +132,26 @@
 }
 :do { /container/start [find name="awg31"] } on-error={ :put "the container is already running or not ready yet: check /container/print, then /container/start awg31" }
 
+# --- 6. Правила роутера (router-setup.rsc), если файл загружен рядом ---
+# После переустановки (uninstall.rsc убирает правила awg31_*) без них у контейнера нет интернета.
+# router-setup.rsc идемпотентен и берёт настройки из тех же :global (AWG31ALL, AWG31LIST и др.).
+:global AWG31NOSETUP
+:local setupDone false
+:if (!([:typeof $AWG31NOSETUP] = "bool" && $AWG31NOSETUP)) do={
+  :local rs ""
+  :foreach f in={"router-setup.rsc"; ($base . "/router-setup.rsc"); ($disk . "/router-setup.rsc")} do={
+    :if (([:len $rs] = 0) && ([:len [/file/find name=$f]] > 0)) do={ :set rs $f }
+  }
+  :if ([:len $rs] > 0) do={
+    :put ("applying " . $rs . " ...")
+    :do { /import file-name=$rs; :set setupDone true } on-error={ :put ("router-setup failed: run /import " . $rs . " by hand and read its messages") }
+  } else={
+    :put "router-setup.rsc not found next to this script: upload it and run /import router-setup.rsc, otherwise the container has no internet"
+  }
+}
+
 :put "==="
 :put ("Web console: https://" . $cip . ":8443 (from LAN only)")
 :put "One-time setup token (long hex string) is in the container log: /log/print where topics~\"container\""
-:put "Next: /import router-setup.rsc"
+:if (!$setupDone) do={ :put "Next: /import router-setup.rsc" }
 }
