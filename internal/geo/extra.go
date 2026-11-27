@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 )
 
@@ -96,19 +95,11 @@ func (s *Store) splitExtra(kind string, need []string) (main []string, byTag map
 func (s *Store) loadExtra(sites map[string]*Site, ips map[string]*IP, siteTags, ipTags map[string][]string) []string {
 	var errs []string
 	for tag, cats := range siteTags {
-		data, err := os.ReadFile(s.extraPath("geosite", tag))
-		if err != nil {
+		got, err := LoadSitesFile(s.extraPath("geosite", tag), cats)
+		if errors.Is(err, os.ErrNotExist) {
 			errs = append(errs, "набор "+tag+": файл ещё не скачан")
 			continue
-		}
-		var got map[string]*Site
-		if isText(data) {
-			t := ParseSiteText(data)
-			got = map[string]*Site{}
-			for _, c := range cats {
-				got[c] = t
-			}
-		} else if got, err = ParseSites(data, set(cats)); err != nil {
+		} else if err != nil {
 			errs = append(errs, "набор "+tag+": "+err.Error())
 			continue
 		}
@@ -117,19 +108,11 @@ func (s *Store) loadExtra(sites map[string]*Site, ips map[string]*IP, siteTags, 
 		}
 	}
 	for tag, cats := range ipTags {
-		data, err := os.ReadFile(s.extraPath("geoip", tag))
-		if err != nil {
+		got, err := LoadIPsFile(s.extraPath("geoip", tag), cats)
+		if errors.Is(err, os.ErrNotExist) {
 			errs = append(errs, "набор "+tag+": файл ещё не скачан")
 			continue
-		}
-		var got map[string]*IP
-		if isText(data) {
-			t := ParseIPText(data)
-			got = map[string]*IP{}
-			for _, c := range cats {
-				got[c] = t
-			}
-		} else if got, err = ParseIPs(data, set(cats)); err != nil {
+		} else if err != nil {
 			errs = append(errs, "набор "+tag+": "+err.Error())
 			continue
 		}
@@ -190,22 +173,7 @@ func (s *Store) ExtraStatus() []ExtraStatus {
 }
 
 func (s *Store) extraCategories(e Extra) []string {
-	data, err := os.ReadFile(s.extraPath(e.Kind, e.Tag))
-	if err != nil || isText(data) {
-		return nil
-	}
-	seen := map[string]bool{}
-	var list []string
-	_ = eachEntry(data, func(code string, _ []byte) error {
-		code = strings.ToLower(code)
-		if code != "" && !seen[code] {
-			seen[code] = true
-			list = append(list, code)
-		}
-		return nil
-	})
-	sort.Strings(list)
-	return list
+	return s.cachedCategories("extra:"+e.Kind+":"+e.Tag, s.extraPath(e.Kind, e.Tag))
 }
 
 // ExtraCategories — категории набора с тегом tag вида kind, уже с префиксом «тег:».

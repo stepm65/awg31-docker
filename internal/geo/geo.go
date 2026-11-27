@@ -211,36 +211,44 @@ func ParseSites(data []byte, need map[string]bool) (map[string]*Site, error) {
 		if !need[code] {
 			return nil
 		}
-		s := newSite()
-		for len(entry) > 0 {
-			n, w, v, _, r, ok := field(entry)
-			if !ok {
-				return errFormat
-			}
-			entry = r
-			if n != 2 || w != 2 {
-				continue
-			}
-			kind, value := 0, ""
-			for d := v; len(d) > 0; {
-				dn, dw, dv, dint, dr, ok := field(d)
-				if !ok {
-					return errFormat
-				}
-				d = dr
-				switch {
-				case dn == 1 && dw == 0:
-					kind = int(dint)
-				case dn == 2 && dw == 2:
-					value = string(dv)
-				}
-			}
-			s.add(kind, value)
+		s, err := parseSiteEntry(entry)
+		if err == nil {
+			out[code] = s
 		}
-		out[code] = s
-		return nil
+		return err
 	})
 	return out, err
+}
+
+// parseSiteEntry разбирает тело одной записи geosite.dat.
+func parseSiteEntry(entry []byte) (*Site, error) {
+	s := newSite()
+	for len(entry) > 0 {
+		n, w, v, _, r, ok := field(entry)
+		if !ok {
+			return nil, errFormat
+		}
+		entry = r
+		if n != 2 || w != 2 {
+			continue
+		}
+		kind, value := 0, ""
+		for d := v; len(d) > 0; {
+			dn, dw, dv, dint, dr, ok := field(d)
+			if !ok {
+				return nil, errFormat
+			}
+			d = dr
+			switch {
+			case dn == 1 && dw == 0:
+				kind = int(dint)
+			case dn == 2 && dw == 2:
+				value = string(dv)
+			}
+		}
+		s.add(kind, value)
+	}
+	return s, nil
 }
 
 // ParseIPs читает geoip.dat, оставляя только категории need.
@@ -250,43 +258,51 @@ func ParseIPs(data []byte, need map[string]bool) (map[string]*IP, error) {
 		if !need[code] {
 			return nil
 		}
-		c := &IP{}
-		for len(entry) > 0 {
-			n, w, v, iv, r, ok := field(entry)
-			if !ok {
-				return errFormat
-			}
-			entry = r
-			switch {
-			case n == 3 && w == 0:
-				c.Reverse = iv != 0
-			case n == 2 && w == 2:
-				var ip []byte
-				bits := -1
-				for d := v; len(d) > 0; {
-					dn, dw, dv, dint, dr, ok := field(d)
-					if !ok {
-						return errFormat
-					}
-					d = dr
-					switch {
-					case dn == 1 && dw == 2:
-						ip = dv
-					case dn == 2 && dw == 0:
-						bits = int(dint)
-					}
-				}
-				a, ok := netip.AddrFromSlice(ip)
-				if !ok || bits < 0 || bits > a.BitLen() {
-					continue
-				}
-				c.Prefixes = append(c.Prefixes, netip.PrefixFrom(a.Unmap(), bits).Masked())
-			}
+		c, err := parseIPEntry(entry)
+		if err == nil {
+			out[code] = c
 		}
-		out[code] = c
-		return nil
+		return err
 	})
 	return out, err
+}
+
+// parseIPEntry разбирает тело одной записи geoip.dat.
+func parseIPEntry(entry []byte) (*IP, error) {
+	c := &IP{}
+	for len(entry) > 0 {
+		n, w, v, iv, r, ok := field(entry)
+		if !ok {
+			return nil, errFormat
+		}
+		entry = r
+		switch {
+		case n == 3 && w == 0:
+			c.Reverse = iv != 0
+		case n == 2 && w == 2:
+			var ip []byte
+			bits := -1
+			for d := v; len(d) > 0; {
+				dn, dw, dv, dint, dr, ok := field(d)
+				if !ok {
+					return nil, errFormat
+				}
+				d = dr
+				switch {
+				case dn == 1 && dw == 2:
+					ip = dv
+				case dn == 2 && dw == 0:
+					bits = int(dint)
+				}
+			}
+			a, ok := netip.AddrFromSlice(ip)
+			if !ok || bits < 0 || bits > a.BitLen() {
+				continue
+			}
+			c.Prefixes = append(c.Prefixes, netip.PrefixFrom(a.Unmap(), bits).Masked())
+		}
+	}
+	return c, nil
 }
 
 // ParseSiteText читает текстовый список: «domain:x», «full:x», «keyword:x»,
@@ -398,36 +414,15 @@ func (s *Store) Load(needSites, needIPs []string) error {
 	needSites, siteTags := s.splitExtra("geosite", needSites)
 	needIPs, ipTags := s.splitExtra("geoip", needIPs)
 	if len(needSites) > 0 {
-		data, err := os.ReadFile(s.sitePath())
-		switch {
-		case err != nil:
+		var err error
+		if sites, err = LoadSitesFile(s.sitePath(), needSites); err != nil {
 			errs = append(errs, "geosite.dat: "+err.Error())
-		case isText(data):
-			// текстовый список — одна категория «custom» и все запрошенные имена
-			t := ParseSiteText(data)
-			for _, n := range needSites {
-				sites[n] = t
-			}
-		default:
-			if sites, err = ParseSites(data, set(needSites)); err != nil {
-				errs = append(errs, "geosite.dat: "+err.Error())
-			}
 		}
 	}
 	if len(needIPs) > 0 {
-		data, err := os.ReadFile(s.ipPath())
-		switch {
-		case err != nil:
+		var err error
+		if ips, err = LoadIPsFile(s.ipPath(), needIPs); err != nil {
 			errs = append(errs, "geoip.dat: "+err.Error())
-		case isText(data):
-			t := ParseIPText(data)
-			for _, n := range needIPs {
-				ips[n] = t
-			}
-		default:
-			if ips, err = ParseIPs(data, set(needIPs)); err != nil {
-				errs = append(errs, "geoip.dat: "+err.Error())
-			}
 		}
 	}
 	if sites == nil {
@@ -610,14 +605,8 @@ func (s *Store) fetch(ctx context.Context, rawURL, dst string, allowHTTP bool) e
 		return errors.New("пустой файл")
 	}
 	// проверка формата до замены рабочего файла
-	data, err := os.ReadFile(tmp.Name())
-	if err != nil {
+	if _, err := scanFile(tmp.Name(), nil, nil); err != nil {
 		return err
-	}
-	if !isText(data) {
-		if err := eachEntry(data, func(string, []byte) error { return nil }); err != nil {
-			return err
-		}
 	}
 	if err := os.Chmod(tmp.Name(), 0o600); err != nil {
 		return err
@@ -665,41 +654,30 @@ type catCache struct {
 // Список кэшируется до смены файла: разбор базы на десять с лишним мегабайт не нужен при
 // каждом нажатии клавиши в поиске. Текстовый список категорий не имеет: результат пуст.
 func (s *Store) Categories(kind string) []string {
-	var path string
 	switch kind {
 	case "geosite":
-		path = s.sitePath()
+		return s.cachedCategories(kind, s.sitePath())
 	case "geoip":
-		path = s.ipPath()
-	default:
-		return nil
+		return s.cachedCategories(kind, s.ipPath())
 	}
+	return nil
+}
+
+// cachedCategories — категории файла path, кэш под ключом key до смены размера или времени файла.
+func (s *Store) cachedCategories(key, path string) []string {
 	st, err := os.Stat(path)
 	if err != nil {
 		return nil
 	}
 	s.catMu.Lock()
 	defer s.catMu.Unlock()
-	if c, ok := s.cats[kind]; ok && c.size == st.Size() && c.mod.Equal(st.ModTime()) {
+	if c, ok := s.cats[key]; ok && c.size == st.Size() && c.mod.Equal(st.ModTime()) {
 		return c.list
 	}
-	data, err := os.ReadFile(path)
-	if err != nil || isText(data) {
-		return nil
-	}
-	seen := map[string]bool{}
-	var list []string
-	_ = eachEntry(data, func(code string, _ []byte) error {
-		if code != "" && !seen[code] {
-			seen[code] = true
-			list = append(list, code)
-		}
-		return nil
-	})
-	sort.Strings(list)
+	list := fileCategories(path)
 	if s.cats == nil {
 		s.cats = map[string]catCache{}
 	}
-	s.cats[kind] = catCache{size: st.Size(), mod: st.ModTime(), list: list}
+	s.cats[key] = catCache{size: st.Size(), mod: st.ModTime(), list: list}
 	return list
 }

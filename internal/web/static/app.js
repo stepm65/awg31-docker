@@ -230,8 +230,8 @@ const I18N = {
     rtOffCond: "выключено", rtMissing: "категории нет в загруженных базах",
     rtUnsaved: "Есть несохранённые изменения", rtRevert: "Отменить", rtReverted: "Изменения отменены.",
     rtAdv: "Текст правил", rtAdvShow: "показать", rtAdvHide: "скрыть", rtAdvHint: "То же самое в виде текста. «#@ Имя | значок» — заголовок блока, «#~ ПРАВИЛО» — выключенная строка; движок видит их как комментарии.",
-    rtSettings: "Списки и DNS", rtPresetLabel: "Источник списков", rtPresetLoyal: "Loyalsoldier (по умолчанию)", rtPresetIplist: "IPList (opencck.org)",
-    rtPresetHint: "Подставляет ссылки на geosite.dat и geoip.dat. После сохранения нажмите «Обновить базы». У IPList свои имена тегов: например geoip:telegram.org вместо geoip:telegram, каталог сервисов подставляет их сам. IPList распространяется под лицензией MIT.",
+    rtSettings: "Списки и DNS", rtPresetLabel: "Источник списков", rtPresetLoyal: "Loyalsoldier (по умолчанию)", rtPresetIplist: "IPList (opencck.org)", rtPresetRunet: "runetfreedom (блокировки в РФ)",
+    rtPresetHint: "Подставляет ссылки на geosite.dat и geoip.dat. После сохранения нажмите «Обновить базы». У IPList свои имена тегов: например geoip:telegram.org вместо geoip:telegram, каталог сервисов подставляет их сам. IPList распространяется под лицензией MIT. runetfreedom: теги как у Loyalsoldier плюс geosite:ru-blocked и geoip:ru-blocked (заблокированное в РФ, обновляется каждые 6 часов), geosite:ru-available-only-inside; база большая (~110 МБ на диске), берите диск, а не встроенную память. Лицензия GPL-3.0.",
     svcRu: "Россия (IP)", svcPrivate: "Локальные сети", rtDlgAdd: "Добавить сервис", rtDlgEdit: "Изменить: {name}", rtCatalog: "Каталог сервисов", rtCatalogHint: "Выбор подставляет название, значок и условия.",
     rtCatalogSearch: "Найти в каталоге", rtRetagToIpl: "В правилах {n} усл. записаны тегами Loyalsoldier (например geoip:telegram), у IPList они называются иначе.", rtRetagToLoyal: "В правилах {n} усл. записаны тегами IPList (например geoip:telegram.org), у Loyalsoldier они называются иначе.", rtRetagBtn: "Заменить теги", rtRetagDone: "Заменено условий: {n}. Сохраните правила.",
     rtSec_groups: "Группы", rtSec_sites: "Сайты", rtSec_svc: "Сервисы", rtSec_cats: "Категории", rtSec_countries: "Страны и сети",
@@ -443,8 +443,8 @@ const I18N = {
     rtOffCond: "off", rtMissing: "category is not in the loaded databases",
     rtUnsaved: "You have unsaved changes", rtRevert: "Discard", rtReverted: "Changes discarded.",
     rtAdv: "Rules text", rtAdvShow: "show", rtAdvHide: "hide", rtAdvHint: "The same rules as text. \"#@ Name | icon\" is a block header and \"#~ RULE\" a turned-off line; the engine sees both as comments.",
-    rtSettings: "Lists and DNS", rtPresetLabel: "List source", rtPresetLoyal: "Loyalsoldier (default)", rtPresetIplist: "IPList (opencck.org)",
-    rtPresetHint: "Fills in the geosite.dat and geoip.dat links. After saving, press \"Update databases\". IPList names its tags differently, for example geoip:telegram.org instead of geoip:telegram; the service catalog fills them in for you. IPList is released under the MIT license.",
+    rtSettings: "Lists and DNS", rtPresetLabel: "List source", rtPresetLoyal: "Loyalsoldier (default)", rtPresetIplist: "IPList (opencck.org)", rtPresetRunet: "runetfreedom (blocked in Russia)",
+    rtPresetHint: "Fills in the geosite.dat and geoip.dat links. After saving, press \"Update databases\". IPList names its tags differently, for example geoip:telegram.org instead of geoip:telegram; the service catalog fills them in for you. IPList is released under the MIT license. runetfreedom uses the Loyalsoldier tags plus geosite:ru-blocked and geoip:ru-blocked (blocked in Russia, updated every 6 hours) and geosite:ru-available-only-inside; the databases are large (~110 MB on disk), so use a disk rather than internal flash. GPL-3.0 license.",
     svcRu: "Russia (IP)", svcPrivate: "Local networks", rtDlgAdd: "Add service", rtDlgEdit: "Edit: {name}", rtCatalog: "Service catalog", rtCatalogHint: "Picking one fills in the name, icon and conditions.",
     rtCatalogSearch: "Search the catalog", rtRetagToIpl: "{n} conditions use Loyalsoldier tags (e.g. geoip:telegram); IPList names them differently.", rtRetagToLoyal: "{n} conditions use IPList tags (e.g. geoip:telegram.org); Loyalsoldier names them differently.", rtRetagBtn: "Replace tags", rtRetagDone: "Conditions replaced: {n}. Save the rules.",
     rtSec_groups: "Groups", rtSec_sites: "Sites", rtSec_svc: "Services", rtSec_cats: "Categories", rtSec_countries: "Countries and networks",
@@ -1468,7 +1468,10 @@ const RULES = window.AWG_RULES, SVC = window.AWG_SERVICES;
 const GEO_PRESETS = {
   loyal: ["https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat", "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"],
   iplist: ["https://iplist.opencck.org/?format=geosite&data=domains", "https://iplist.opencck.org/?format=geoip&data=cidr4"],
+  // runetfreedom: теги как у Loyalsoldier (v2fly) плюс ru-blocked, ru-available-only-inside и др.
+  runet: ["https://raw.githubusercontent.com/runetfreedom/russia-v2ray-rules-dat/release/geosite.dat", "https://raw.githubusercontent.com/runetfreedom/russia-v2ray-rules-dat/release/geoip.dat"],
 };
+const GEO_PRESET_KEYS = ["loyal", "iplist", "runet"];
 // У IPList теги называются иначе: это имя портала (telegram.org) или группы (messengers), а не
 // «telegram» как у Loyalsoldier. Пока выбран IPList, каталог подставляет его имена. Сервисов,
 // которых в IPList нет (Google, Apple, Steam и др.), здесь нет, для них остаются обычные теги.
@@ -2291,10 +2294,10 @@ function pagePolicy() {
             h("input", { id: "pol-upd", type: "number", min: "0", max: "720", value: String(ed.geo_update_hours ?? 24), oninput: (e) => { ed.geo_update_hours = e.target.value; dirty(); } }),
             h("div", { class: "hint" }, t("polGeoEveryHint")))),
         h("div", { class: "rt-presets" }, h("span", { class: "rt-presets-l" }, t("rtPresetLabel")),
-          ["loyal", "iplist"].map((k) => h("button", { type: "button", class: "filter-chip",
+          GEO_PRESET_KEYS.map((k) => h("button", { type: "button", class: "filter-chip",
             "aria-pressed": String(ed.geosite_url === GEO_PRESETS[k][0] && ed.geoip_url === GEO_PRESETS[k][1]),
             onclick: () => { ed.geosite_url = GEO_PRESETS[k][0]; ed.geoip_url = GEO_PRESETS[k][1]; document.getElementById("pol-gs").value = ed.geosite_url; document.getElementById("pol-gi").value = ed.geoip_url; rtDirty(); renderPresets(); } },
-          t(k === "loyal" ? "rtPresetLoyal" : "rtPresetIplist")))),
+          t({ loyal: "rtPresetLoyal", iplist: "rtPresetIplist", runet: "rtPresetRunet" }[k])))),
         presetNote,
         h("p", { class: "hint" }, t("rtPresetHint")))),
     h("div", { class: "card" }, h("h2", {}, t("polTestTitle")),
@@ -2313,12 +2316,13 @@ function pagePolicy() {
     rtEls.bar);
   // Переключатели источников подсвечиваются по текущим ссылкам.
   function renderPresets() {
-    page.querySelectorAll(".rt-presets .filter-chip").forEach((el, i) => { const k = ["loyal", "iplist"][i]; el.setAttribute("aria-pressed", String(ed.geosite_url === GEO_PRESETS[k][0] && ed.geoip_url === GEO_PRESETS[k][1])); });
+    page.querySelectorAll(".rt-presets .filter-chip").forEach((el, i) => { const k = GEO_PRESET_KEYS[i]; el.setAttribute("aria-pressed", String(ed.geosite_url === GEO_PRESETS[k][0] && ed.geoip_url === GEO_PRESETS[k][1])); });
     drawPresetNote();
   }
   // Правила записаны тегами другого источника: предложить заменить их одной кнопкой.
   function drawPresetNote() {
-    const loyal = ed.geosite_url === GEO_PRESETS.loyal[0] && ed.geoip_url === GEO_PRESETS.loyal[1];
+    // у runetfreedom теги те же, что у Loyalsoldier
+    const loyal = ["loyal", "runet"].some((k) => ed.geosite_url === GEO_PRESETS[k][0] && ed.geoip_url === GEO_PRESETS[k][1]);
     const ipl = ed.geosite_url === GEO_PRESETS.iplist[0] && ed.geoip_url === GEO_PRESETS.iplist[1];
     const n = loyal || ipl ? retag(ipl, false) : 0;
     if (!n) { presetNote.replaceChildren(); presetNote.hidden = true; return; }
