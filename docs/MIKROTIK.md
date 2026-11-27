@@ -117,12 +117,14 @@ IPv6: `router-setup.rsc` повторяет ту же схему для IPv6 (а
 Вместо того чтобы вести список `awg31` вручную, контейнер может сам заполнять его из правил страницы «Маршрутизация» (страница «RouterOS» в консоли). Нужен режим шлюза и REST API RouterOS 7:
 
 ```
-/user/group/add name=awg31 policy=read,write,rest-api
-/user/add name=awg31 group=awg31 password=<пароль>
+/user/group/add name=awg31 policy=read,write,api,rest-api
+/user/add name=awg31 group=awg31 password=<пароль> address=192.168.253.2/32
 /certificate/add name=awg31-www common-name=router
 /certificate/sign awg31-www
 /ip/service/set www-ssl certificate=awg31-www disabled=no address=192.168.253.2/32
 ```
+
+Ошибка `RouterOS 500: std failure: not allowed` и в журнале роутера `login failure for user awg31 via api` значат, что у группы нет нужных прав (`api` и `rest-api`) или неверный пароль. Если у `www-ssl` задан `address=`, в нём должен быть адрес контейнера `192.168.253.2`, иначе соединение не устанавливается вовсе.
 
 В консоли укажите адрес `https://192.168.253.1`, пользователя, пароль и пин сертификата (`sha256//…`; самоподписанный сертификат роутера иначе не пройдёт проверку). Кнопка «Проверить подключение» показывает модель и версию RouterOS. Готовые команды с вашими значениями есть внизу страницы.
 
