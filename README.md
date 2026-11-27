@@ -4,7 +4,7 @@
 
 An **AmneziaWG 3.1** client in a container with a bilingual (RU/EN) web console that looks and behaves like the [amneziawg31-installer](https://github.com/stepm65/amneziawg31-installer) panel: `.conf` profiles, turning tunnels on and off, autostart after a reboot and **a subscription taken straight from your panel**. Runs in Docker and **on MikroTik routers (arm64 and arm32)**. No CDN, no third-party Go modules, no web terminal.
 
-Version **0.8.3** · GPL-3.0 licence · not affiliated with the AmneziaVPN developers.
+Version **0.9.0** · GPL-3.0 licence · not affiliated with the AmneziaVPN developers.
 
 ![Overview](docs/screenshots/en-overview.png)
 
@@ -20,6 +20,9 @@ Version **0.8.3** · GPL-3.0 licence · not affiliated with the AmneziaVPN devel
 - **Several tunnels and failover:** tunnels run at the same time, each with its own routing table; the primary one (where LAN traffic goes) changes with a single command, without restarts. Modes "hot standby" (all up, instant switch) and "switch over" (only the primary is up); failure is detected by handshake, a TCP probe through that particular tunnel, or both; failure threshold, pause after a failure, return to a higher-priority tunnel. A Failover page shows the order and health of tunnels.
 - **Tunnel groups and balancing:** several VPS servers as one exit. "Balancing" spreads new connections across the healthy members by weight (one flow stays in one tunnel); "In order" sends traffic through the first healthy member. A failed member leaves the route on its own and comes back after its pause. A group can be made the primary exit or used in rules: `PROXY@group` ("these sites go through VPS-1, and if it is down, through VPS-2"). A Tunnel groups page.
 - **Rule-based routing and DNS:** `PROXY` / `PROXY@tunnel` / `PROXY@group` / `DIRECT` / `DROP` rules by domain, `geosite:`, `geoip:` and network; v2ray `geosite.dat`/`geoip.dat` databases (or plain text lists) are downloaded on a schedule and only the needed categories are loaded into memory. A DNS forwarder (UDP/TCP, DoH) sends queries for `PROXY` through the tunnel and for `DIRECT` around it, and answers NXDOMAIN for `DROP`; addresses from answers are remembered so traffic to them takes the same path. The Routing page is a table of services with an icon, conditions, a destination, an on/off switch and drag-and-drop ordering; the service catalog and its icons work offline, and the rules themselves stay plain text you can edit by hand. The database source switches with one button, including [IPList](https://iplist.opencck.org/) (its tags are named after sites and groups, e.g. `geoip:telegram.org`, and the container fetches site icons from it). Once the databases are downloaded, the "Add service" dialog lists every category they contain, with search. There is also a "where will this domain or IP go" check.
+- **Per-device and per-port rules:** a device list (name, IP or network, type; can be filled from the router's DHCP leases), and a rule can be limited to devices, destination ports and protocol: `DIRECT geosite:steam src=@pc port=27000-27100 net=udp`. Such rules are checked before general ones. Filter tiles and a connection counter on every rule.
+- **Monitoring:** traffic history for 15 minutes or an hour, a "devices → rules → tunnels" diagram of connections from conntrack (click a node to highlight its path), a connection table with names from DNS. "Overview" shows traffic, tunnels and groups, the busiest rules and devices; the bottom of the menu shows the container state (CPU, memory, connections, uptime).
+- **Tools:** extra geodata sets under their own tag (`geosite:tag:category`), a route test with device and port, rules export and import, backup and restore (profiles and all settings).
 - **RouterOS integration:** the container maintains an address list on the router itself (`PROXY` networks permanently, DNS-learned addresses with a timeout) or announces them over **BGP**, and adds FWD entries to `/ip/dns/static` for domain rules. It uses the RouterOS 7 REST API as a separate least-privilege user; the router certificate is pinned and other entries are left alone. The "RouterOS" page tests the connection and shows ready-made router commands.
 - **Server mode:** a profile with `ListenPort` and peers without `Endpoint` comes up as an AmneziaWG server, and its clients reach the internet through the container's LAN; on MikroTik the `awg31_server_*` rules forward port 51821/udp.
 - **Kill switch and IPv6:** while no tunnel is up, LAN traffic is dropped instead of bypassing the VPN (`AWG_KILLSWITCH=on`); IPv6 in the tunnel with NAT66 and, on MikroTik, a ULA address on the veth if the router gives none (`AWG_ENABLE_IPV6=on`).
@@ -115,9 +118,13 @@ Good to know:
 |---|---|
 | ![Routing](docs/screenshots/en-policy.png) | ![Add service](docs/screenshots/en-add-service.png) |
 
-| Panel subscription | |
+| Monitoring: traffic and connection topology | Devices |
 |---|---|
-| ![Subscription](docs/screenshots/en-subscription.png) | |
+| ![Monitoring](docs/screenshots/en-monitor.png) | ![Devices](docs/screenshots/en-devices.png) |
+
+| Panel subscription | Tools |
+|---|---|
+| ![Subscription](docs/screenshots/en-subscription.png) | ![Tools](docs/screenshots/en-tools.png) |
 
 | New profile | Maintenance |
 |---|---|
