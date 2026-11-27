@@ -115,9 +115,12 @@ func (e *Error) Error() string {
 	case 401:
 		return "RouterOS: неверный логин или пароль (401)"
 	case 403:
-		return "RouterOS: у пользователя нет прав (403): нужна группа с policy=read,write,rest-api"
+		return "RouterOS: у пользователя нет прав (403): нужна группа с policy=read,write,api,rest-api"
 	case 404:
 		return "RouterOS: путь не найден (404): нужен RouterOS 7 и включённая служба www-ssl/www"
+	}
+	if strings.Contains(e.Detail, "not allowed") {
+		return fmt.Sprintf("RouterOS %d: %s — у группы пользователя не хватает прав: /user/group/set awg31 policy=read,write,api,rest-api", e.Code, e.Detail)
 	}
 	if e.Detail != "" {
 		return fmt.Sprintf("RouterOS %d: %s", e.Code, e.Detail)

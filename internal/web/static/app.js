@@ -2665,7 +2665,7 @@ function rosScript(ed, st) {
   const cip = (st && st.container_ip) || ed.forward_to || "192.168.253.2";
   const lines = [
     "# " + t("rosScrUser"),
-    "/user/group/add name=awg31 policy=read,write,rest-api",
+    "/user/group/add name=awg31 policy=read,write,api,rest-api",
     "/user/add name=" + (ed.user || "awg31") + " group=awg31 password=<" + t("rosScrPass") + ">",
     "# " + t("rosScrRest"),
     "/certificate/add name=awg31-www common-name=router",
