@@ -453,3 +453,6 @@ select.cell-input{width:auto;min-width:200px}
   .save-bar .actions{width:100%}
   .save-bar .actions .btn{flex:1}
 }
+
+.rt-retag{flex-wrap:wrap;gap:8px 10px;margin:10px 0 0}
+.rt-retag .btn{margin-left:auto}

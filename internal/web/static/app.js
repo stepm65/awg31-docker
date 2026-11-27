@@ -169,7 +169,8 @@ const I18N = {
     rtSettings: "Списки и DNS", rtPresetLabel: "Источник списков", rtPresetLoyal: "Loyalsoldier (по умолчанию)", rtPresetIplist: "IPList (opencck.org)",
     rtPresetHint: "Подставляет ссылки на geosite.dat и geoip.dat. После сохранения нажмите «Обновить базы». У IPList свои имена тегов: например geoip:telegram.org вместо geoip:telegram, каталог сервисов подставляет их сам. IPList распространяется под лицензией MIT.",
     svcRu: "Россия (IP)", svcPrivate: "Локальные сети", rtDlgAdd: "Добавить сервис", rtDlgEdit: "Изменить: {name}", rtCatalog: "Каталог сервисов", rtCatalogHint: "Выбор подставляет название, значок и условия.",
-    rtCatalogSearch: "Найти в каталоге", rtSec_groups: "Группы", rtSec_sites: "Сайты", rtSec_svc: "Сервисы", rtSec_cats: "Категории", rtSec_countries: "Страны и сети",
+    rtCatalogSearch: "Найти в каталоге", rtRetagToIpl: "В правилах {n} усл. записаны тегами Loyalsoldier (например geoip:telegram), у IPList они называются иначе.", rtRetagToLoyal: "В правилах {n} усл. записаны тегами IPList (например geoip:telegram.org), у Loyalsoldier они называются иначе.", rtRetagBtn: "Заменить теги", rtRetagDone: "Заменено условий: {n}. Сохраните правила.",
+    rtSec_groups: "Группы", rtSec_sites: "Сайты", rtSec_svc: "Сервисы", rtSec_cats: "Категории", rtSec_countries: "Страны и сети",
     rtCatMore: "Показаны первые {m}, ещё {n}: уточните поиск.", rtCatNone: "Ничего не найдено.",
     rtCatalogFull: "Все категории загруженной базы ({n}). Выбор подставляет geosite и, если у категории есть адреса, geoip. Начните вводить название, чтобы найти нужную.",
     rtCatalogIplist: "Список из загруженной базы IPList: группа — набор сайтов (ai, messengers), сайт — один портал. Выбор подставляет geosite и geoip.",
@@ -337,7 +338,8 @@ const I18N = {
     rtSettings: "Lists and DNS", rtPresetLabel: "List source", rtPresetLoyal: "Loyalsoldier (default)", rtPresetIplist: "IPList (opencck.org)",
     rtPresetHint: "Fills in the geosite.dat and geoip.dat links. After saving, press \"Update databases\". IPList names its tags differently, for example geoip:telegram.org instead of geoip:telegram; the service catalog fills them in for you. IPList is released under the MIT license.",
     svcRu: "Russia (IP)", svcPrivate: "Local networks", rtDlgAdd: "Add service", rtDlgEdit: "Edit: {name}", rtCatalog: "Service catalog", rtCatalogHint: "Picking one fills in the name, icon and conditions.",
-    rtCatalogSearch: "Search the catalog", rtSec_groups: "Groups", rtSec_sites: "Sites", rtSec_svc: "Services", rtSec_cats: "Categories", rtSec_countries: "Countries and networks",
+    rtCatalogSearch: "Search the catalog", rtRetagToIpl: "{n} conditions use Loyalsoldier tags (e.g. geoip:telegram); IPList names them differently.", rtRetagToLoyal: "{n} conditions use IPList tags (e.g. geoip:telegram.org); Loyalsoldier names them differently.", rtRetagBtn: "Replace tags", rtRetagDone: "Conditions replaced: {n}. Save the rules.",
+    rtSec_groups: "Groups", rtSec_sites: "Sites", rtSec_svc: "Services", rtSec_cats: "Categories", rtSec_countries: "Countries and networks",
     rtCatMore: "Showing the first {m}, {n} more: refine the search.", rtCatNone: "Nothing found.",
     rtCatalogFull: "All categories of the downloaded database ({n}). Picking one fills in geosite and, if the category has addresses, geoip. Start typing a name to find one.",
     rtCatalogIplist: "List from the downloaded IPList database: a group is a set of sites (ai, messengers), a site is one portal. Picking one fills in geosite and geoip.",
@@ -1293,6 +1295,47 @@ const SVC_IPLIST = {
   signal: ["geosite:signal.org", "geoip:signal.org"],
   linkedin: ["geosite:linkedin.com", "geoip:linkedin.com"],
 };
+// Замена тегов при смене источника: для сервисов каталога, у которых в IPList свои имена, пары
+// «тег Loyalsoldier ↔ тег IPList» одного вида (geosite с geosite, geoip с geoip). Тег, у которого
+// пары нет (у Loyalsoldier нет geoip:youtube), при переходе в эту сторону убирается.
+function tagPairs(toIplist) {
+  const map = {}, drop = {};
+  SVC.catalog.forEach((s) => {
+    const alt = SVC_IPLIST[s.id];
+    if (!alt) return;
+    const from = toIplist ? s.conds : alt, to = toIplist ? alt : s.conds;
+    from.forEach((c) => {
+      const k = c.split(":")[0], m = to.find((x) => x.split(":")[0] === k);
+      if (m && m !== c) map[c] = m;
+    });
+    if (!toIplist) alt.forEach((c) => { if (!s.conds.some((x) => x.split(":")[0] === c.split(":")[0])) drop[c] = true; });
+  });
+  return { map, drop };
+}
+// Сколько условий в правилах записано тегами другого источника; с fix — заменяет их.
+function retag(toIplist, fix) {
+  const { map, drop } = tagPairs(toIplist);
+  let n = 0;
+  if (!S.rt || !S.rt.model) return 0;
+  RULES.blocks(S.rt.model).forEach((b) => {
+    const keep = [];
+    b.lines.forEach((l) => {
+      const key = l.kind + ":" + l.value;
+      if (drop[key]) { n++; if (fix) return; }
+      else if (map[key]) {
+        n++;
+        if (fix) {
+          const nv = map[key];
+          if (b.lines.some((o) => o !== l && o.kind + ":" + o.value === nv) || keep.some((o) => o.kind + ":" + o.value === nv)) return;
+          l.value = nv.slice(nv.indexOf(":") + 1); l.raw = null;
+        }
+      }
+      keep.push(l);
+    });
+    if (fix) b.lines = keep;
+  });
+  return n;
+}
 // IPList выбран на странице (ссылки обеих баз совпадают с его набором).
 const iplistChosen = () => { const ed = S.polEdit || {}; return ed.geosite_url === GEO_PRESETS.iplist[0] && ed.geoip_url === GEO_PRESETS.iplist[1]; };
 // Условия записи каталога под источник баз, который сейчас выбран на странице.
@@ -1778,6 +1821,7 @@ function pagePolicy() {
     h("td", { class: "mono" }, Object.entries(loaded || {}).map(([k, n]) => k + " (" + n + ")").join(", ") || "—"));
   const actName = (a) => (a ? t("polAct_" + String(a).toLowerCase()) : "—");
   const tr = S.polTest;
+  const presetNote = h("p", { class: "info-line rt-retag", hidden: true });
 
   const master = h("button", { type: "button", class: "rt-switch", role: "switch", "aria-checked": String(!!ed.enabled), "aria-labelledby": "rt-master-l",
     onclick: (e) => { ed.enabled = !ed.enabled; e.currentTarget.setAttribute("aria-checked", String(!!ed.enabled)); dirty(); } }, h("span", { class: "rt-knob" }), h("span", { class: "sr-only" }, t("polEnable")));
@@ -1832,6 +1876,7 @@ function pagePolicy() {
             "aria-pressed": String(ed.geosite_url === GEO_PRESETS[k][0] && ed.geoip_url === GEO_PRESETS[k][1]),
             onclick: () => { ed.geosite_url = GEO_PRESETS[k][0]; ed.geoip_url = GEO_PRESETS[k][1]; document.getElementById("pol-gs").value = ed.geosite_url; document.getElementById("pol-gi").value = ed.geoip_url; rtDirty(); renderPresets(); } },
           t(k === "loyal" ? "rtPresetLoyal" : "rtPresetIplist")))),
+        presetNote,
         h("p", { class: "hint" }, t("rtPresetHint")))),
     h("div", { class: "card" }, h("h2", {}, t("polTestTitle")),
       h("form", { "data-nodirty": "", onsubmit: (e) => { e.preventDefault(); runTest(); } },
@@ -1850,7 +1895,23 @@ function pagePolicy() {
   // Переключатели источников подсвечиваются по текущим ссылкам.
   function renderPresets() {
     page.querySelectorAll(".rt-presets .filter-chip").forEach((el, i) => { const k = ["loyal", "iplist"][i]; el.setAttribute("aria-pressed", String(ed.geosite_url === GEO_PRESETS[k][0] && ed.geoip_url === GEO_PRESETS[k][1])); });
+    drawPresetNote();
   }
+  // Правила записаны тегами другого источника: предложить заменить их одной кнопкой.
+  function drawPresetNote() {
+    const loyal = ed.geosite_url === GEO_PRESETS.loyal[0] && ed.geoip_url === GEO_PRESETS.loyal[1];
+    const ipl = ed.geosite_url === GEO_PRESETS.iplist[0] && ed.geoip_url === GEO_PRESETS.iplist[1];
+    const n = loyal || ipl ? retag(ipl, false) : 0;
+    if (!n) { presetNote.replaceChildren(); presetNote.hidden = true; return; }
+    presetNote.hidden = false;
+    presetNote.replaceChildren(icon("info", 16), h("span", {}, t(ipl ? "rtRetagToIpl" : "rtRetagToLoyal", { n })),
+      h("button", { type: "button", class: "btn btn-secondary btn-small", onclick: () => {
+        const done = retag(ipl, true);
+        rtChanged(); drawPresetNote();
+        say("ok", t("rtRetagDone", { n: done })); renderFlash();
+      } }, t("rtRetagBtn")));
+  }
+  drawPresetNote();
   rtDraw(); rtBar();
   return page;
 }
