@@ -129,6 +129,28 @@
 /container/mounts/add list="awg31-data" src=$datapath dst="/data"
 
 # --- 4. Контейнер ---
+# Обновление: если контейнер уже есть, а задан .tar (или :global AWG31UPGRADE true для образа
+# из реестра), старый контейнер останавливается и удаляется, затем ставится новый образ.
+# Данные (/data: профили, правила, пароль) лежат отдельно в $datapath и сохраняются.
+:global AWG31UPGRADE
+:local upgrade false
+:if ([:typeof $AWG31UPGRADE] = "bool") do={ :set upgrade $AWG31UPGRADE }
+:if ([:len $tarfile] > 0) do={ :set upgrade true }
+:if (([:len [/container/find name="awg31"]] > 0) && $upgrade) do={
+  :put "upgrade: stopping the old container awg31 (data in /data is kept)"
+  :do { /container/stop [find name="awg31"] } on-error={}
+  :local w 0
+  :while (([:len [/container/find where name="awg31" status="stopped"]] = 0) && $w < 30) do={ :delay 2s; :set w ($w + 1) }
+  /container/remove [find name="awg31"]
+  :set w 0
+  :while (([:len [/container/find name="awg31"]] > 0) && $w < 30) do={ :delay 2s; :set w ($w + 1) }
+  :do { /file/remove [find name=($base . "/root")] } on-error={}
+  :delay 2s
+  :put "- old container awg31 removed"
+}
+:if (([:len [/container/find name="awg31"]] > 0) && !$upgrade) do={
+  :put "container awg31 already exists and is kept as is. To upgrade: set :global AWG31TAR to the new .tar (or :global AWG31UPGRADE true for the registry image) and run the script again"
+}
 :if ([:len [/container/find name="awg31"]] = 0) do={
   :if ([:len $tarfile] > 0) do={
     /container/add name="awg31" file=$tarfile interface="veth-awg31" root-dir=($base . "/root") \
@@ -174,7 +196,12 @@
     :put ("applying " . $rs . " ...")
     :do { /import file-name=$rs; :set setupDone true } on-error={ :put ("router-setup failed: run /import " . $rs . " by hand and read its messages") }
   } else={
-    :put "router-setup.rsc not found next to this script: upload it and run /import router-setup.rsc, otherwise the container has no internet"
+    :if ([:len [/ip/firewall/nat/find comment="awg31_nat"]] > 0) do={
+      :put "router-setup.rsc not found next to this script; awg31_* rules are already on the router, so nothing to do"
+      :set setupDone true
+    } else={
+      :put "router-setup.rsc not found next to this script: upload it and run /import router-setup.rsc, otherwise the container has no internet"
+    }
   }
 }
 
