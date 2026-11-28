@@ -70,7 +70,9 @@ LABEL org.opencontainers.image.title="awg31" \
 
 # iptables-legacy: он работает и на ядрах без nf_tables (например, на RouterOS).
 # conntrack-tools: мониторинг соединений, если ядро не отдаёт /proc/net/nf_conntrack.
-RUN apk add --no-cache bash iproute2 iptables iptables-legacy openresolv ca-certificates conntrack-tools \
+# tini — PID 1: подбирает осиротевшие процессы (amneziawg-go уходит в фон и после
+# выключения туннеля оставался зомби у awgd) и передаёт сигналы остановки.
+RUN apk add --no-cache bash iproute2 iptables iptables-legacy openresolv ca-certificates conntrack-tools tini \
  && for t in iptables iptables-save iptables-restore ip6tables ip6tables-save ip6tables-restore; do \
       ln -sf "/usr/sbin/${t}-legacy" "/usr/sbin/${t}"; \
     done \
@@ -97,4 +99,4 @@ EXPOSE 8443/tcp
 HEALTHCHECK --interval=60s --timeout=5s --start-period=15s --retries=3 \
     CMD ["/usr/bin/awgd", "healthcheck"]
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/sbin/tini", "--", "/entrypoint.sh"]

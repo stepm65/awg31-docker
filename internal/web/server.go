@@ -21,6 +21,7 @@ import (
 	"awg31/internal/failover"
 	"awg31/internal/geo"
 	"awg31/internal/group"
+	"awg31/internal/journal"
 	"awg31/internal/monitor"
 	"awg31/internal/policy"
 	"awg31/internal/ros"
@@ -43,6 +44,7 @@ type Config struct {
 	Router   *ros.Manager
 	Geo      *geo.Store
 	Monitor  *monitor.Monitor
+	Journal  *journal.Journal // последние сообщения awgd (страница «Журнал»)
 	// Autostart поднимает туннели, отмеченные в настройках (после восстановления копии).
 	Autostart func(ctx context.Context)
 	Sessions  *auth.Sessions
@@ -144,6 +146,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/geo/icon", s.requireAuth(s.handleGeoIcon))
 	mux.HandleFunc("GET /api/monitor", s.requireAuth(s.handleMonitor))
 	mux.HandleFunc("GET /api/monitor/flows", s.requireAuth(s.handleMonitorFlows))
+	mux.HandleFunc("GET /api/log", s.requireAuth(s.handleLog))
+	mux.HandleFunc("GET /api/log/download", s.requireAuth(s.handleLogDownload))
 	mux.HandleFunc("GET /api/policy/export", s.requireAuth(s.handleExportRules))
 	mux.HandleFunc("GET /api/backup", s.requireAuth(s.handleBackup))
 	mux.HandleFunc("POST /api/backup/restore", s.requireAuth(s.handleRestore))

@@ -43,6 +43,7 @@ const ICONS = {
   restart: '<path d="M20 7v5h-5"/><path d="M20 12a8 8 0 1 0-2.3 5.7"/>',
   logout: '<path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/>',
   activity: '<path d="M3 12h4l3-7 4 14 3-7h4"/>',
+  logs: '<path d="M4 6h16M4 12h16M4 18h10"/>',
   link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   info: '<circle cx="12" cy="12" r="10"/><path d="M12 11v6M12 7h.01"/>',
@@ -76,7 +77,9 @@ const I18N = {
     ago_s: "{n} с назад", ago_m: "{n} мин назад", ago_h: "{n} ч назад", ago_d: "{n} дн назад",
     loading: "Загрузка…", yes: "да", no: "нет", back: "К списку", confirmDelete: "Подтвердить удаление",
     version: "Версия", language: "Язык", close: "Закрыть",
-    navInfra: "ИНФРАСТРУКТУРА", navProfiles: "ПРОФИЛИ", navSystem: "СИСТЕМА", navDevices: "Устройства", navMonitor: "Мониторинг", navTools: "Инструменты",
+    navInfra: "ИНФРАСТРУКТУРА", navProfiles: "ПРОФИЛИ", navSystem: "СИСТЕМА", navDevices: "Устройства", navMonitor: "Мониторинг", navTools: "Инструменты", navLog: "Журнал",
+    logTitle: "Журнал", logSub: "Последние сообщения контейнера: запуск, туннели, переключения, ошибки. Хранятся в памяти до перезапуска контейнера (до 3000 строк).",
+    logAll: "Все", logWarn: "Предупреждения", logErr: "Ошибки", logSearch: "Поиск по журналу", logFollow: "Следить за новыми", logDownload: "Скачать", logEmpty: "Записей нет.", logNoMatch: "Нет записей под фильтр.", logShown: "Показано {n} из {all}", logLevel_info: "инфо", logLevel_warn: "внимание", logLevel_error: "ошибка", logTime: "Время", logLevel: "Уровень", logText: "Сообщение",
     toolTitle: "Инструменты", toolSub: "Базы geodata, проверка маршрута, перенос правил и резервная копия.",
     toolGeoTitle: "Геоданные", toolGeoSources: "Источники", toolLoadedCats: "в правилах: {n}",
     toolExtraTitle: "Дополнительные наборы", toolExtraSub: "Любой .dat (например geo-slim или russia-blocked) под своим тегом. Не больше 8 наборов.",
@@ -297,7 +300,9 @@ const I18N = {
     ago_s: "{n}s ago", ago_m: "{n}m ago", ago_h: "{n}h ago", ago_d: "{n}d ago",
     loading: "Loading…", yes: "yes", no: "no", back: "Back to list", confirmDelete: "Confirm deletion",
     version: "Version", language: "Language", close: "Close",
-    navInfra: "INFRASTRUCTURE", navProfiles: "PROFILES", navSystem: "SYSTEM", navDevices: "Devices", navMonitor: "Monitoring", navTools: "Tools",
+    navInfra: "INFRASTRUCTURE", navProfiles: "PROFILES", navSystem: "SYSTEM", navDevices: "Devices", navMonitor: "Monitoring", navTools: "Tools", navLog: "Log",
+    logTitle: "Log", logSub: "Recent container messages: startup, tunnels, failover, errors. Kept in memory until the container restarts (up to 3000 lines).",
+    logAll: "All", logWarn: "Warnings", logErr: "Errors", logSearch: "Search the log", logFollow: "Follow new lines", logDownload: "Download", logEmpty: "No entries.", logNoMatch: "No entries match the filter.", logShown: "Showing {n} of {all}", logLevel_info: "info", logLevel_warn: "warning", logLevel_error: "error", logTime: "Time", logLevel: "Level", logText: "Message",
     toolTitle: "Tools", toolSub: "Geodata, route test, moving rules and backup.",
     toolGeoTitle: "Geodata", toolGeoSources: "Sources", toolLoadedCats: "in rules: {n}",
     toolExtraTitle: "Extra sets", toolExtraSub: "Any .dat (for example geo-slim or russia-blocked) under its own tag. Up to 8 sets.",
@@ -641,6 +646,7 @@ function parseRoute() {
   if (parts[0] === "devices") return { page: "devices" };
   if (parts[0] === "monitor") return { page: "monitor" };
   if (parts[0] === "tools") return { page: "tools" };
+  if (parts[0] === "log") return { page: "log" };
   if (parts[0] === "p" && parts[1]) return { page: "profile", name: parts[1], tab: ["config", "sub"].includes(parts[2]) ? parts[2] : "overview" };
   return { page: "overview" };
 }
@@ -657,6 +663,7 @@ window.addEventListener("hashchange", () => {
   if (S.route.page === "devices") { S.devEdit = null; S.leases = null; loadDevices(true); }
   if (S.route.page === "monitor") { loadMonitor(true); loadFlows(true); }
   if (S.route.page === "tools") { S.toolTest = null; S.extraEdit = null; loadPolicy(true); loadDevices(true); }
+  if (S.route.page === "log") loadLog(true);
   if (S.auth && S.auth.authenticated) { renderSide(); renderMain(); }
 });
 document.addEventListener("input", (e) => { if (e.target.closest && e.target.closest("#main form") && !e.target.closest("[data-nodirty]")) S.dirty = true; });
@@ -698,7 +705,7 @@ async function refresh(quiet) {
     if (!quiet) say("error", e.message);
   }
   // Открытое меню строки не закрываем перерисовкой по таймеру.
-  if (quiet) { renderSide(); if (!S.dirty && !S.busy && !document.querySelector(".row-menu[open]") && !rtTyping()) renderMain(); } else { renderSide(); renderMain(); }
+  if (quiet) { renderSide(); if (!S.dirty && !S.busy && !document.querySelector(".row-menu[open]") && !rtTyping() && S.route.page !== "log") renderMain(); } else { renderSide(); renderMain(); }
 }
 
 async function boot() {
@@ -769,6 +776,7 @@ function renderSide() {
     h("div", { class: "side-title" }, h("span", {}, t("navSystem"))),
     link("router", "link", t("navRouter"), "/router"),
     link("tools", "wrench", t("navTools"), "/tools"),
+    link("log", "logs", t("navLog"), "/log"),
     link("maintenance", "settings", t("navMaint"), "/maintenance"),
     h("div", { class: "side-status", id: "side-status" }),
     h("div", { class: "side-foot" }, icon("tag", 16), h("span", { class: "ver" }, "v" + ((S.data && S.data.version) || "…"))),
@@ -803,7 +811,7 @@ function renderMain() {
   const r = S.route;
   const page = r.page === "profiles" ? pageProfiles() : r.page === "profile" ? pageProfile(r)
     : r.page === "new" ? pageNew() : r.page === "maintenance" ? pageMaintenance()
-    : r.page === "failover" ? pageFailover() : r.page === "groups" ? pageGroups() : r.page === "policy" ? pagePolicy() : r.page === "router" ? pageRouter() : r.page === "devices" ? pageDevices() : r.page === "monitor" ? pageMonitor() : r.page === "tools" ? pageTools() : pageOverview();
+    : r.page === "failover" ? pageFailover() : r.page === "groups" ? pageGroups() : r.page === "policy" ? pagePolicy() : r.page === "router" ? pageRouter() : r.page === "devices" ? pageDevices() : r.page === "monitor" ? pageMonitor() : r.page === "tools" ? pageTools() : r.page === "log" ? pageLog() : pageOverview();
   mainEl.replaceChildren(h("div", { id: "flash-slot" }, flashBox()), page);
 }
 
@@ -2114,6 +2122,77 @@ async function loadPolicy(quiet) {
 }
 const toolsTyping = () => { const a = document.activeElement; return !!(a && mainEl && mainEl.contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)); };
 
+/* ---------- журнал ---------- */
+// Записи приходят порциями после последнего номера; список перерисовывается отдельно от
+// страницы, чтобы поиск и прокрутка не сбивались при каждом опросе.
+const LOG_KEEP = 3000, LOG_SHOW = 800;
+function logState() {
+  if (!S.log) S.log = { entries: [], last: 0, level: "all", q: "", follow: true, loaded: false };
+  return S.log;
+}
+async function loadLog(quiet) {
+  const L = logState();
+  if (L.busy) return; // опрос и переход на страницу не должны забрать одну порцию дважды
+  L.busy = true;
+  let r;
+  try { r = await api("GET", "/api/log?after=" + L.last); } catch (e) { if (!quiet) { say("error", e.message); renderFlash(); } return; } finally { L.busy = false; }
+  if (r.last < L.last) { L.entries = []; L.last = 0; return loadLog(quiet); } // контейнер перезапустился
+  const first = !L.loaded;
+  L.loaded = true;
+  const fresh = r.entries.filter((e) => e.seq > L.last);
+  if (fresh.length) L.entries = L.entries.concat(fresh).slice(-LOG_KEEP);
+  L.last = Math.max(L.last, r.last);
+  r.entries = fresh;
+  if (S.route.page !== "log") return;
+  if (first || !document.getElementById("log-list")) renderMain();
+  else if (r.entries.length) logDraw();
+}
+const logMatch = (e, L) => (L.level === "all" || (L.level === "warn" ? e.level !== "info" : e.level === "error")) &&
+  (!L.q || e.text.toLowerCase().includes(L.q.toLowerCase()));
+function logTimeText(iso) {
+  const d = new Date(iso), now = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  const time = p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+  return d.toDateString() === now.toDateString() ? time : p(d.getDate()) + "." + p(d.getMonth() + 1) + " " + time;
+}
+function logDraw() {
+  const L = logState(), box = document.getElementById("log-list"), cnt = document.getElementById("log-count");
+  if (!box) return;
+  const all = L.entries.filter((e) => logMatch(e, L));
+  const shown = all.slice(-LOG_SHOW);
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+  box.replaceChildren(...(shown.length ? shown.map((e) => h("div", { class: "log-row lvl-" + e.level },
+    h("span", { class: "log-time mono", title: new Date(e.t).toLocaleString() }, logTimeText(e.t)),
+    h("span", { class: "log-lvl" }, t("logLevel_" + e.level)),
+    h("span", { class: "log-text mono" }, e.text)))
+    : [h("p", { class: "hint log-empty" }, t(L.entries.length ? "logNoMatch" : "logEmpty"))]));
+  if (cnt) cnt.textContent = all.length > shown.length ? t("logShown", { n: shown.length, all: all.length }) : "";
+  if (L.follow && (atBottom || !box.dataset.drawn)) box.scrollTop = box.scrollHeight;
+  box.dataset.drawn = "1";
+}
+function pageLog() {
+  const L = logState();
+  if (!L.loaded) { loadLog(true); return h("div", {}, heading(t("navSystem"), t("logTitle")), h("div", { class: "loading" }, t("loading"))); }
+  const chip = (key, label) => h("button", { class: "filter-chip", type: "button", "aria-pressed": String(L.level === key),
+    onclick: () => { L.level = key; for (const b of document.querySelectorAll("#log-levels .filter-chip")) b.setAttribute("aria-pressed", String(b.dataset.k === key)); logDraw(); }, "data-k": key }, label);
+  const page = h("div", {},
+    heading(t("navSystem"), t("logTitle"), t("logSub"),
+      h("a", { class: "btn btn-secondary", href: "/api/log/download", download: "" }, icon("download", 16), t("logDownload"))),
+    h("div", { class: "card log-card" },
+      h("div", { class: "log-toolbar" },
+        h("div", { class: "filter-chips", id: "log-levels", role: "group", "aria-label": t("logLevel") },
+          chip("all", t("logAll")), chip("warn", t("logWarn")), chip("error", t("logErr"))),
+        h("label", { class: "log-search" }, icon("search", 16),
+          h("input", { type: "search", value: L.q, placeholder: t("logSearch"), "aria-label": t("logSearch"), "data-nodirty": "", spellcheck: "false",
+            oninput: (e) => { L.q = e.target.value; logDraw(); } })),
+        h("label", { class: "check log-follow" }, h("input", { type: "checkbox", checked: L.follow, "data-nodirty": "",
+          onchange: (e) => { L.follow = e.target.checked; if (L.follow) logDraw(); } }), h("span", {}, t("logFollow")))),
+      h("div", { class: "log-list", id: "log-list", role: "log", "aria-live": "polite", tabindex: "0" }),
+      h("div", { class: "hint log-count", id: "log-count" })));
+  setTimeout(logDraw, 0);
+  return page;
+}
+
 /* ---------- инструменты ---------- */
 function pageTools() {
   if (!S.pol) { loadPolicy(); return h("div", {}, heading(t("navSystem"), t("toolTitle")), h("div", { class: "loading" }, t("loading"))); }
@@ -2797,6 +2876,7 @@ setInterval(() => {
     if (S.route && S.route.page === "groups") loadGroups(true);
     if (S.route && S.route.page === "policy") loadPolicy(true);
     if (S.route && S.route.page === "router") loadRouter(true);
+    if (S.route && S.route.page === "log") loadLog(true);
     loadMonitor(true);
     if (S.route && (S.route.page === "monitor" || S.route.page === "overview")) loadFlows(true);
     if (S.route && S.route.page === "policy" && !S.dirty) loadFlows(true);

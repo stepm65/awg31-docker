@@ -139,6 +139,10 @@ type Options struct {
 type Manager struct {
 	r    Runner
 	opts Options
+	// opMu выстраивает в очередь подъём и остановку туннелей (awg-quick может работать
+	// секунды: резолв endpoint, хуки). mu защищает только поля ниже и берётся ненадолго,
+	// поэтому Status, Primary, Table и страница статуса не ждут долгий up/down.
+	opMu sync.Mutex
 	mu   sync.Mutex
 
 	routingErr string         // последняя ошибка EnsureRouting (для UI)
@@ -213,10 +217,10 @@ func (m *Manager) up(ctx context.Context, name, content string) error {
 	if err != nil {
 		return err
 	}
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	m.opMu.Lock()
+	defer m.opMu.Unlock()
 
-	ifaces, err := m.statusLocked(ctx)
+	ifaces, err := m.status(ctx)
 	if err != nil {
 		return err
 	}
@@ -228,13 +232,18 @@ func (m *Manager) up(ctx context.Context, name, content string) error {
 	table := 0
 	server := cfg.IsServer()
 	if m.gateway() && !server {
-		if table, err = m.allocTableLocked(name); err != nil {
+		m.mu.Lock()
+		table, err = m.allocTableLocked(name)
+		m.mu.Unlock()
+		if err != nil {
 			return err
 		}
 	}
 	release := func() {
 		if table > 0 {
+			m.mu.Lock()
 			delete(m.tables, name)
+			m.mu.Unlock()
 		}
 	}
 	run, notes := m.prepare(cfg, table)
@@ -268,6 +277,8 @@ func (m *Manager) up(ctx context.Context, name, content string) error {
 		release()
 		return err
 	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.gateway() && m.primary == "" && !server {
 		// первый поднятый туннель становится основным
 		if err := m.setPrimaryLocked(ctx, name); err != nil {
@@ -287,8 +298,8 @@ func (m *Manager) Down(ctx context.Context, name string) error {
 }
 
 func (m *Manager) down(ctx context.Context, name string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	m.opMu.Lock()
+	defer m.opMu.Unlock()
 	path := m.runPath(name)
 	if _, err := os.Stat(path); err != nil {
 		return ErrNotUp
@@ -297,6 +308,8 @@ func (m *Manager) down(ctx context.Context, name string) error {
 	if rmErr := os.Remove(path); err == nil && rmErr != nil && !errors.Is(rmErr, os.ErrNotExist) {
 		err = rmErr
 	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	delete(m.tables, name)
 	if m.primary == name {
 		// Маршрут в RouteTable исчез вместе с интерфейсом. Если работает другой
@@ -337,14 +350,14 @@ type Iface struct {
 	Peers      []Peer `json:"peers"`
 }
 
-// Status возвращает все поднятые интерфейсы awg.
+// Status возвращает все поднятые интерфейсы awg. Блокировок не берёт: «awg show»
+// только читает, и страница статуса не должна ждать подъёма другого туннеля.
 func (m *Manager) Status(ctx context.Context) ([]Iface, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return m.statusLocked(ctx)
+	return m.status(ctx)
 }
 
-func (m *Manager) statusLocked(ctx context.Context) ([]Iface, error) {
+// status читает состояние интерфейсов через «awg show».
+func (m *Manager) status(ctx context.Context) ([]Iface, error) {
 	out, err := m.r.Run(ctx, m.opts.Awg, "show", "interfaces")
 	if err != nil {
 		return nil, err

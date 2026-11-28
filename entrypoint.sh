@@ -4,7 +4,14 @@
 # всё, что Docker делает снаружи, здесь делается изнутри и по возможности.
 set -eu
 
-log() { printf '[entrypoint] %s\n' "$*" >&2; }
+# Строки дублируются в RUN_DIR/entrypoint.log: awgd переносит их на страницу «Журнал».
+EPLOG="${RUN_DIR:-/run/awg31}/entrypoint.log"
+mkdir -p "${EPLOG%/*}" 2>/dev/null || true
+: > "$EPLOG" 2>/dev/null || true
+log() {
+    printf '[entrypoint] %s\n' "$*" >&2
+    printf '%s %s\n' "$(date +%s)" "$*" >> "$EPLOG" 2>/dev/null || true
+}
 
 # --- /dev/net/tun: amneziawg-go работает в userspace и без него не поднимется ---
 ensure_tun() {

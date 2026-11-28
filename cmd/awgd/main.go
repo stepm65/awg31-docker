@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -25,6 +26,7 @@ import (
 	"awg31/internal/failover"
 	"awg31/internal/geo"
 	"awg31/internal/group"
+	"awg31/internal/journal"
 	"awg31/internal/monitor"
 	"awg31/internal/policy"
 	"awg31/internal/ros"
@@ -135,8 +137,14 @@ func adminPassword() (string, error) {
 	return os.Getenv("ADMIN_PASSWORD"), nil
 }
 
+// jrnl — последние сообщения для страницы «Журнал»: туда строки идут в UTF-8, а в журнал
+// контейнера (stdout/stderr) — транслитом.
+var jrnl = journal.New(3000)
+
 func run() error {
-	logf := log.New(asciiWriter{os.Stdout}, "", log.LstdFlags).Printf
+	log.SetOutput(io.MultiWriter(asciiWriter{os.Stderr}, &journal.Writer{J: jrnl}))
+	importEntrypointLog(jrnl, env("RUN_DIR", "/run/awg31"))
+	logf := log.New(io.MultiWriter(asciiWriter{os.Stdout}, &journal.Writer{J: jrnl}), "", log.LstdFlags).Printf
 	logf("awg31 %s", version.Version)
 
 	dataDir := env("DATA_DIR", "/data")
@@ -238,7 +246,7 @@ func run() error {
 		Ifaces: func() []string { n, _ := st.ListProfiles(); return n }}
 
 	srv := web.New(web.Config{
-		Store: st, Tunnels: tm, Subs: subs, Failover: fo, Groups: grp, Policy: pol, Geo: geoStore, Router: rosMgr, Monitor: mon, DNSEnabled: dnsSrv != nil,
+		Store: st, Tunnels: tm, Subs: subs, Failover: fo, Groups: grp, Policy: pol, Geo: geoStore, Router: rosMgr, Monitor: mon, Journal: jrnl, DNSEnabled: dnsSrv != nil,
 		Autostart:      func(ctx context.Context) { autostart(ctx, st, tm, logf) },
 		Sessions:       auth.NewSessions(24*time.Hour, 64),
 		Limiter:        auth.NewLimiter(5, 2*time.Minute, time.Minute, 4096),
@@ -558,5 +566,22 @@ func guardLocalRule(ctx context.Context, r tunnel.Runner, ipv6 bool, logf func(s
 			return
 		case <-t.C:
 		}
+	}
+}
+
+// importEntrypointLog переносит в журнал строки entrypoint.sh: он работает до awgd и пишет
+// их ещё и в RUN_DIR/entrypoint.log («<unix-время> <текст>»).
+func importEntrypointLog(j *journal.Journal, runDir string) {
+	raw, err := os.ReadFile(filepath.Join(runDir, "entrypoint.log"))
+	if err != nil {
+		return
+	}
+	for _, line := range strings.Split(string(raw), "\n") {
+		ts, text, ok := strings.Cut(line, " ")
+		sec, err := strconv.ParseInt(ts, 10, 64)
+		if !ok || err != nil {
+			continue
+		}
+		j.AddAt(time.Unix(sec, 0), "[entrypoint] "+text)
 	}
 }

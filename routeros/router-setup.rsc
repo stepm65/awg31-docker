@@ -79,6 +79,27 @@
 # --- 1. Списки интерфейсов (стандартные LAN/WAN) ---
 :if ([:len [/interface/list/find name="WAN"]] = 0) do={ /interface/list/add name="WAN"; :put "+ list WAN created (add your WAN ports to it!)" }
 :if ([:len [/interface/list/find name="LAN"]] = 0) do={ /interface/list/add name="LAN"; :put "+ list LAN created (add your bridge/LAN to it!)" }
+# Пустой WAN (чистый CHR, сброс без defconf): без него не работают awg31_nat и awg31_out,
+# у контейнера нет интернета. Берём интерфейс активного маршрута по умолчанию.
+:if ([:len [/interface/list/member/find list="WAN"]] = 0) do={
+  :local wif ""
+  :do {
+    :foreach r in=[/ip/route/find where dst-address="0.0.0.0/0" active routing-table="main"] do={
+      :if ([:len $wif] = 0) do={
+        :local g [:tostr [/ip/route/get $r immediate-gw]]
+        :local p [:find $g "%"]
+        :if ([:typeof $p] = "num") do={ :set g [:pick $g ($p + 1) [:len $g]] }
+        :if ([:len [/interface/find name=$g]] > 0) do={ :set wif $g }
+      }
+    }
+  } on-error={}
+  :if (([:len $wif] > 0) && ([:len [/interface/list/member/find list="LAN" interface=$wif]] = 0)) do={
+    /interface/list/member/add list="WAN" interface=$wif comment="awg31: default route interface"
+    :put ("+ list WAN was empty: added " . $wif . " (interface of the default route)")
+  } else={
+    :put "WARNING: list WAN is empty and the default route interface was not found: add your WAN port, e.g. /interface/list/member/add list=WAN interface=ether1"
+  }
+}
 :if ([:len $iifl] > 0) do={
   :if (([:pick $iifl 0 1] != "!") && ([:len [/interface/list/find name=$iifl]] = 0)) do={
     /interface/list/add name=$iifl

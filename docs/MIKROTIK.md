@@ -68,6 +68,7 @@ awg31 работает контейнером на роутерах MikroTik с 
 
 Контейнер ходит наружу через роутер, и этому могут мешать такие вещи (`router-setup.rsc` настраивает первые две):
 
+- пустой список `WAN` (чистый CHR, сброс без конфигурации по умолчанию): с 0.9.4 `router-setup.rsc` сам добавляет в него интерфейс активного маршрута по умолчанию (комментарий `awg31: default route interface`); если маршрута нет, добавьте порт вручную: `/interface/list/member/add list=WAN interface=ether1`;
 - нет `srcnat` (masquerade) для адреса контейнера: `/ip/firewall/nat/add chain=srcnat action=masquerade src-address=192.168.253.2 out-interface-list=WAN comment="awg31_nat"`;
 - стандартный firewall режет ICMP к роутеру и forward с veth (он не из `LAN`): правила `awg31_icmp` (input) и `awg31_out` (forward из veth в `WAN`);
 - после `uninstall.rsc` правила `awg31_*` удалены, а `router-setup.rsc` при установке не применился (файла не было рядом): `/import router-setup.rsc`;
